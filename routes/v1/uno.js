@@ -201,7 +201,7 @@ exports.startGame = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.to(req.params.id).emit('some event');
+        io.emit(req.params.id, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -229,7 +229,7 @@ exports.restart = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.to(req.params.id).emit('some event');
+        io.emit(req.params.id, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });

@@ -17,7 +17,7 @@ app.post('/user/new', async function (req, res) {
     try {
         const userName = req.body.userName;
         if (!userName || userName == '') return res.status(400).json({ message: 'Invalid Username' });
-        const result = await mongodb.insertOne('players', { name: userName });
+        const result = await mongodb.insertOne('players', { name: userName,createdAt:new Date() });
         const user = result.ops[0];
         req.session.user = user;
         res.json(req.session.user);
@@ -35,7 +35,7 @@ function checkSession(req, res, next) {
 app.post('/room/create', checkSession, async function (req, res) {
     try {
         const user = req.session.user;
-        const insertObj = { roomName: req.body.roomName, createdBy: user, status: 'CREATED', players: [user], messages: [] };
+        const insertObj = { roomName: req.body.roomName, createdBy: user, status: 'CREATED', players: [user], messages: [],createdAt:new Date() };
         const result = await mongodb.insertOne('rooms', insertObj);
         res.json({ _id: result.ops[0]._id });
     } catch (err) {
