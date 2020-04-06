@@ -71,7 +71,7 @@ exports.submitCard = async function (req, res) {
                 }
                 break;
         }
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -105,7 +105,7 @@ exports.passCard = async function (req, res) {
             return res.status(400).json({ message: 'Player can pass only when they take card from deck' });
         }
         let updateObj = { currentPlayer: getNextPlayer(result[0].players, result[0].currentPlayer, result[0].inc) };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -142,7 +142,7 @@ exports.takeCard = async function (req, res) {
         updateObj.playersCards[req.session.user._id].push(result[0].deck[0]);
         updateObj.deck.splice(0, 1);
         updateObj.currentPlayer.pass = true;
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -193,7 +193,7 @@ exports.startGame = async function (req, res) {
             }
         }
         const updateObj = { status: 'STARTED', lastCard, playersCards, deck, startedBy: req.session.user, currentPlayer: players[randomNumber(0, players.length - 1)], inc: 1 };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -221,7 +221,7 @@ exports.restart = async function (req, res) {
             return res.status(400).json({ message: 'Player cannot restart unless player present in game' });
         }
         const updateObj = { status: 'CREATED' };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)

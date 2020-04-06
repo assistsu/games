@@ -24,7 +24,7 @@ const ApiV1 = require('./routes/v1/routes');
 app.use('/api/v1', ApiV1);
 
 app.use('/assets', express.static('uno-client/assets/'))
-app.get(['/', '/room/*',], function (req, res) {
+app.get(['/', '/room/*', '/profile'], function (req, res) {
   res.sendFile(__dirname + '/uno-client/index.html')
 })
 

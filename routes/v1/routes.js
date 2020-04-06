@@ -17,7 +17,7 @@ app.post('/user/new', async function (req, res) {
     try {
         const userName = req.body.userName;
         if (!userName || userName == '') return res.status(400).json({ message: 'Invalid Username' });
-        const result = await mongodb.insertOne('players', { name: userName,createdAt:new Date() });
+        const result = await mongodb.insertOne('players', { name: userName, createdAt: new Date() });
         const user = result.ops[0];
         req.session.user = user;
         res.json(req.session.user);
@@ -27,6 +27,21 @@ app.post('/user/new', async function (req, res) {
     }
 });
 
+app.get('/admin/:collectionName', async function (req, res) {
+    try {
+        const result = await mongodb.find(req.params.collectionName, req.query.q);
+        res.json(result);
+    } catch (err) {
+        console.log("ERR::" + req.path, err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.delete('/user/signout', function (req, res) {
+    req.session.user = null;
+    res.json({ message: 'success' });
+})
+
 function checkSession(req, res, next) {
     if (req.session.user == null) { return res.status(400).json({ message: 'Unauthorized' }) }
     next();
@@ -35,7 +50,7 @@ function checkSession(req, res, next) {
 app.post('/room/create', checkSession, async function (req, res) {
     try {
         const user = req.session.user;
-        const insertObj = { roomName: req.body.roomName, createdBy: user, status: 'CREATED', players: [user], messages: [],createdAt:new Date() };
+        const insertObj = { roomName: req.body.roomName, createdBy: user, status: 'CREATED', players: [user], messages: [], createdAt: new Date() };
         const result = await mongodb.insertOne('rooms', insertObj);
         res.json({ _id: result.ops[0]._id });
     } catch (err) {
@@ -59,7 +74,7 @@ app.post('/room/join', checkSession, async function (req, res) {
         if (result[0].players.length > 10) {
             return res.json({ message: 'Cannot join once since room is full. u can spectate or view results at any time' });
         }
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.body.roomID) }, { $push: { players: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.body.roomID) }, { $push: { players: req.session.user }, $set: { updatedAt: new Date(), updatedBy: req.session.user } });
         res.json({ message: 'Success' });
         io.emit(req.body.roomID, 'some event');
     } catch (err) {
