@@ -88,6 +88,7 @@ app.get('/room/:id', checkSession, async function (req, res) {
 })
 
 app.post('/room/:id/start', checkSession, unoRouter.startGame);
+app.post('/room/:id/restart', checkSession, unoRouter.restart);
 app.post('/room/:id/submit', checkSession, unoRouter.submitCard);
 app.post('/room/:id/take', checkSession, unoRouter.takeCard);
 app.post('/room/:id/pass', checkSession, unoRouter.passCard);

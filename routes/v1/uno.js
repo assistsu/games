@@ -65,9 +65,11 @@ exports.submitCard = async function (req, res) {
         let updateObj = { lastCard: chosenCard, playersCards: result[0].playersCards, inc: inc, currentPlayer: nextPlayer, deck: result[0].deck };
         switch (result[0].playersCards[req.session.user._id].length) {
             case 0: updateObj.status = 'ENDED'; break;
-            case 1: if (!req.body.unoStatus) {
-                updateObj.playersCards[req.session.user._id] = updateObj.playersCards[req.session.user._id].concat(updateObj.deck.splice(0, 2));
-            }
+            case 1:
+                if (req.body.unoStatus != 'true') {
+                    updateObj.playersCards[req.session.user._id] = updateObj.playersCards[req.session.user._id].concat(updateObj.deck.splice(0, 2));
+                }
+                break;
         }
         const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
         let room = Object.assign(result[0], updateObj);
@@ -133,6 +135,9 @@ exports.takeCard = async function (req, res) {
         if (result[0].currentPlayer._id != req.session.user._id) {
             return res.status(400).json({ message: 'Player can take action only on their turn' });
         }
+        if (result[0].currentPlayer.pass) {
+            return res.status(400).json({ message: 'You have taken a card from deck already' });
+        }
         let updateObj = { playersCards: result[0].playersCards, currentPlayer: result[0].currentPlayer, deck: result[0].deck };
         updateObj.playersCards[req.session.user._id].push(result[0].deck[0]);
         updateObj.deck.splice(0, 1);
@@ -196,7 +201,34 @@ exports.startGame = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        console.log("req.params.id",req.params.id);
+        io.to(req.params.id).emit('some event');
+    } catch (err) {
+        console.log("ERR::" + req.path, err);
+        res.status(500).json({ message: err.message });
+    }
+}
+
+exports.restart = async function (req, res) {
+    try {
+        const result = await mongodb.findById('rooms', req.params.id);
+        if (result.length == 0) {
+            return res.status(400).json({ message: 'Invalid Room ID' });
+        }
+        if (result[0].status != 'ENDED') {
+            return res.status(400).json({ message: 'Cant restart unless match ends' });
+        }
+        if (result[0].players.filter(o => o._id == req.session.user._id).length == 0) {
+            return res.status(400).json({ message: 'Player cannot restart unless player present in game' });
+        }
+        const updateObj = { status: 'CREATED' };
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: updateObj });
+        let room = Object.assign(result[0], updateObj);
+        room.myCards = room.playersCards[req.session.user._id];
+        if (room.playersCards)
+            room.players = room.players.map(o => Object.assign(o, { cards: room.playersCards[o._id].length }));
+        delete room.playersCards;
+        delete room.deck;
+        res.json(room);
         io.to(req.params.id).emit('some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
