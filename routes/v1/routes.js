@@ -2,6 +2,7 @@ const express = require('express');
 const app = express.Router();
 
 const unoRouter = require('./uno');
+const messageRouter = require('./message');
 const mongodb = require('../../model/mongodb');
 
 app.get('/user', async function (req, res) {
@@ -16,7 +17,9 @@ app.get('/user', async function (req, res) {
 app.post('/user/new', async function (req, res) {
     try {
         const userName = req.body.userName;
-        if (!userName || userName == '') return res.status(400).json({ message: 'Invalid Username' });
+        if (typeof userName != "string" || userName.trim().length == 0) {
+            return res.status(400).json({ message: 'userName should not be empty' });
+        }
         const result = await mongodb.insertOne('players', { name: userName, createdAt: new Date() });
         const user = result.ops[0];
         req.session.user = user;
@@ -61,7 +64,11 @@ app.post('/room/create', checkSession, async function (req, res) {
 
 app.post('/room/join', checkSession, async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.body.roomID);
+        const { roomID } = req.body;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -74,9 +81,9 @@ app.post('/room/join', checkSession, async function (req, res) {
         if (result[0].players.length > 10) {
             return res.json({ message: 'Cannot join once since room is full. u can spectate or view results at any time' });
         }
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.body.roomID) }, { $push: { players: req.session.user }, $set: { updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $push: { players: req.session.user }, $set: { updatedAt: new Date(), updatedBy: req.session.user } });
         res.json({ message: 'Success' });
-        io.emit(req.body.roomID, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -85,7 +92,11 @@ app.post('/room/join', checkSession, async function (req, res) {
 
 app.get('/room/:id', checkSession, async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -107,5 +118,6 @@ app.post('/room/:id/restart', checkSession, unoRouter.restart);
 app.post('/room/:id/submit', checkSession, unoRouter.submitCard);
 app.post('/room/:id/take', checkSession, unoRouter.takeCard);
 app.post('/room/:id/pass', checkSession, unoRouter.passCard);
+app.post('/room/:id/message', checkSession, messageRouter.message);
 
 module.exports = app;

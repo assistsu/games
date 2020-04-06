@@ -25,7 +25,11 @@ function getNextPlayer(players, currentPlayer, inc) {
 
 exports.submitCard = async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -71,7 +75,7 @@ exports.submitCard = async function (req, res) {
                 }
                 break;
         }
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -79,7 +83,7 @@ exports.submitCard = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.emit(req.params.id, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -88,7 +92,11 @@ exports.submitCard = async function (req, res) {
 
 exports.passCard = async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -105,7 +113,7 @@ exports.passCard = async function (req, res) {
             return res.status(400).json({ message: 'Player can pass only when they take card from deck' });
         }
         let updateObj = { currentPlayer: getNextPlayer(result[0].players, result[0].currentPlayer, result[0].inc) };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -113,7 +121,7 @@ exports.passCard = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.emit(req.params.id, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -122,7 +130,11 @@ exports.passCard = async function (req, res) {
 
 exports.takeCard = async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -142,7 +154,7 @@ exports.takeCard = async function (req, res) {
         updateObj.playersCards[req.session.user._id].push(result[0].deck[0]);
         updateObj.deck.splice(0, 1);
         updateObj.currentPlayer.pass = true;
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -150,7 +162,7 @@ exports.takeCard = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.emit(req.params.id, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -159,7 +171,11 @@ exports.takeCard = async function (req, res) {
 
 exports.startGame = async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -193,7 +209,7 @@ exports.startGame = async function (req, res) {
             }
         }
         const updateObj = { status: 'STARTED', lastCard, playersCards, deck, startedBy: req.session.user, currentPlayer: players[randomNumber(0, players.length - 1)], inc: 1 };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -201,7 +217,7 @@ exports.startGame = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.emit(req.params.id, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
@@ -210,7 +226,11 @@ exports.startGame = async function (req, res) {
 
 exports.restart = async function (req, res) {
     try {
-        const result = await mongodb.findById('rooms', req.params.id);
+        const roomID = req.params.id;
+        if (typeof roomID != "string" || roomID.trim().length == 0) {
+            return res.status(400).json({ message: 'roomID should not be empty' });
+        }
+        const result = await mongodb.findById('rooms', roomID);
         if (result.length == 0) {
             return res.status(400).json({ message: 'Invalid Room ID' });
         }
@@ -221,7 +241,7 @@ exports.restart = async function (req, res) {
             return res.status(400).json({ message: 'Player cannot restart unless player present in game' });
         }
         const updateObj = { status: 'CREATED' };
-        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(req.params.id) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
+        const result1 = await mongodb.updateOne('rooms', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.session.user } });
         let room = Object.assign(result[0], updateObj);
         room.myCards = room.playersCards[req.session.user._id];
         if (room.playersCards)
@@ -229,7 +249,7 @@ exports.restart = async function (req, res) {
         delete room.playersCards;
         delete room.deck;
         res.json(room);
-        io.emit(req.params.id, 'some event');
+        io.emit(roomID, 'some event');
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });
