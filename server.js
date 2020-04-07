@@ -21,7 +21,7 @@ const routes = require('./routes');
 app.use('/api/v1', routes);
 
 app.get('*', function (req, res) {
-  res.redirect('http://localhost:5000')
+  res.redirect('https://iamsangamesh.github.io/games/')
 });
 
 const port = 8080;
