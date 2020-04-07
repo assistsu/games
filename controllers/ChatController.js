@@ -1,6 +1,6 @@
-const mongodb = require('../../model/mongodb');
+const mongodb = require('../model/mongodb');
 
-exports.message = async function (req, res) {
+async function newMessagefunction(req, res) {
     try {
         const { text, roomID } = req.body;
         if (typeof text != "string" || text.trim().length == 0) {
@@ -32,3 +32,5 @@ exports.message = async function (req, res) {
         res.status(500).json({ message: err.message });
     }
 }
+
+module.exports = { newMessagefunction };

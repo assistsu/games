@@ -1,4 +1,6 @@
-const card_types = {
+const _ = require('lodash');
+
+exports.card_types = {
     DRAW_TWO_CARDS: 'DRAW_TWO_CARDS',
     REVERSE_CARD: 'REVERSE_CARD',
     SKIP_CARD: 'SKIP_CARD',
@@ -9,8 +11,6 @@ const card_types = {
 const card_colours = {
     YELLOW: 'warning', RED: 'danger', GREEN: 'success', BLUE: 'primary',
 }
-
-exports.card_types = card_types;
 
 exports.getCards = function () {
     let cards = [];
@@ -23,4 +23,15 @@ exports.getCards = function () {
         cards.push({ color: 'dark', type: 'WILD_CARD_DRAW_FOUR_CARDS' });
     });
     return cards;
+}
+
+exports.isActionValid = function (lastCard, chosenCard) {
+    return chosenCard.color == 'dark' || lastCard.color == chosenCard.color || lastCard.type == chosenCard.type || (lastCard.color == 'dark' && lastCard.chosenColor == chosenCard.color);
+}
+
+exports.getNextPlayer = function (players, currentPlayer, inc) {
+    const currentPlayerInd = _.findIndex(players, { _id: currentPlayer._id });
+    const nextPlayerInd = (currentPlayerInd + inc) % players.length;
+    const nextPlayer = players[nextPlayerInd >= 0 ? nextPlayerInd : players.length - 1];
+    return nextPlayer;
 }

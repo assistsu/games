@@ -1,5 +1,5 @@
 const mongodb = require('mongodb');
-const MongoClient = mongodb.MongoClient;
+const config = require('../config');
 
 function getId(id) {
     return mongodb.ObjectId(id);
@@ -7,18 +7,14 @@ function getId(id) {
 
 exports.getId = getId;
 
-const url = 'mongodb://localhost:27017';
-
-const dbName = 'uno';
-
 let db = null;
 
 exports.connect = function () {
     return new Promise((resolve, reject) => {
-        MongoClient.connect(url, function (err, client) {
+        mongodb.MongoClient.connect(config.mongodb.url, function (err, client) {
             if (err) return reject(err);
             console.log("Connected successfully to mongo server");
-            db = client.db(dbName);
+            db = client.db(config.mongodb.dbName);
             resolve();
         });
     })
