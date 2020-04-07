@@ -16,7 +16,7 @@ app.use('/api/v1', routes);
 app.use('/assets', express.static('./uno-client/assets'))
 
 app.get('*', function (req, res) {
-  res.sendFile(__dirname + './uno-client/index.html');
+  res.sendFile(__dirname + '/uno-client/index.html');
 });
 
 const port = 8080;
