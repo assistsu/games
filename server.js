@@ -3,8 +3,8 @@ const app = express();
 var http = require('http').createServer(app);
 io = require('socket.io')(http);
 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5000");
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "https://iamsangamesh.github.io");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-player-token");
   next();
 });
