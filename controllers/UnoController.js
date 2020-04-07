@@ -1,5 +1,5 @@
 var shuffle = require('shuffle-array')
-const Uno = require('../utils/Uno');
+const Uno = require('../utils/uno');
 const Common = require('../utils/Common');
 const mongodb = require('../model/mongodb');
 const _ = require('lodash');

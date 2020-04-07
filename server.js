@@ -3,12 +3,6 @@ const app = express();
 var http = require('http').createServer(app);
 io = require('socket.io')(http);
 
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "https://iamsangamesh.github.io");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-player-token");
-  next();
-});
-
 const bodyParser = require('body-parser');
 const mongodb = require('./model/mongodb');
 
@@ -19,9 +13,10 @@ app.use(bodyParser.json());
 const routes = require('./routes');
 
 app.use('/api/v1', routes);
+app.use('/assets', express.static('./uno-client/assets'))
 
 app.get('*', function (req, res) {
-  res.redirect('https://iamsangamesh.github.io/games/')
+  res.sendFile(__dirname + './uno-client/index.html');
 });
 
 const port = 8080;
