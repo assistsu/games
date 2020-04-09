@@ -22,6 +22,7 @@ async function getGameStatus(req, res, next) {
             room.players = room.players.map(o => Object.assign(o, { cards: room.playersCards[o._id].length }));
         delete room.playersCards;
         delete room.deck;
+        delete room.games;
         res.json(room);
     } catch (err) {
         console.log("ERR::" + req.path, err);
