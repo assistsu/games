@@ -299,8 +299,8 @@ async function leaveRoom(req, res) {
                 roomData[0].deck.splice(common.randomNumber(0, roomData[0].deck.length - 1), 0, card);
             });
             updateObj.deck = roomData[0].deck;
-            if (roomData[0].currentPlayer._id == req.player._id) {
-                updateObj.currentPlayer = Uno.getNextPlayer(up);
+            if (roomData[0].players.length > 1 && roomData[0].currentPlayer._id == req.player._id) {
+                updateObj.currentPlayer = Uno.getNextPlayer(roomData[0].players, roomData[0].currentPlayer);
             }
         }
         let finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID), "players._id": req.player._id }, { $set: updateObj });
