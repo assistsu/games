@@ -1,11 +1,10 @@
-const jwt = require('jsonwebtoken');
+const jwt = require('../utils/jwt');
 const assert = require('assert');
-const { JWT_SECRET_KEY } = require('../config');
 
 function validatePlayer(req, res, next) {
     try {
         const playerToken = req.headers['x-player-token'];
-        const player = jwt.verify(playerToken, JWT_SECRET_KEY);
+        const player = jwt.verify(playerToken);
         assert.equal(typeof player._id, "string");
         req.player = player;
         next();

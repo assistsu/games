@@ -1,6 +1,5 @@
-const jwt = require('jsonwebtoken');
+const jwt = require('../utils/jwt');
 const mongodb = require('../model/mongodb');
-const { JWT_SECRET_KEY } = require('../config');
 
 async function createPlayer(req, res) {
     try {
@@ -10,7 +9,7 @@ async function createPlayer(req, res) {
         }
         const result = await mongodb.insertOne('players', { name: userName, createdAt: new Date(), updatedAt: new Date() });
         const user = result.ops[0];
-        user.token = jwt.sign(user, JWT_SECRET_KEY);
+        user.token = jwt.sign(user);
         res.json(user);
     } catch (err) {
         console.log("ERR::" + req.path, err);
