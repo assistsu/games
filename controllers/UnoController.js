@@ -229,7 +229,7 @@ async function startGame(req, res, next) {
             lastCard = card;
             deck.splice(num, 1);
         }
-        let playersCards = {}, players = roomData[0].players;
+        let playersCards = {}, players = shuffle(roomData[0].players, { 'copy': true });
         for (let i = 0; i < players.length; i++) {
             const playerId = players[i]._id;
             playersCards[playerId] = [];
@@ -240,7 +240,7 @@ async function startGame(req, res, next) {
                 deck.splice(num, 1);
             }
         }
-        const updateObj = { status: 'STARTED', lastCard, playersCards, deck, startedBy: req.player, currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1 };
+        const updateObj = { players, status: 'STARTED', lastCard, playersCards, deck, startedBy: req.player, currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1 };
         const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player } });
         req.room = Object.assign(roomData[0], updateObj);
         next();
