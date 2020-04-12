@@ -3,14 +3,14 @@ const mongodb = require('../model/mongodb');
 
 async function createPlayer(req, res) {
     try {
-        const userName = req.body.userName;
-        if (typeof userName != "string" || userName.trim().length == 0) {
-            return res.status(400).json({ message: 'userName should not be empty' });
+        const playerName = req.body.playerName;
+        if (typeof playerName != "string" || playerName.trim().length == 0) {
+            return res.status(400).json({ message: 'playerName should not be empty' });
         }
-        const result = await mongodb.insertOne('players', { name: userName, createdAt: new Date(), updatedAt: new Date() });
-        const user = result.ops[0];
-        user.token = jwt.sign(user);
-        res.json(user);
+        const result = await mongodb.insertOne('players', { name: playerName, createdAt: new Date(), updatedAt: new Date() });
+        const player = result.ops[0];
+        player.token = jwt.sign(player);
+        res.json(player);
     } catch (err) {
         console.log("ERR::" + req.path, err);
         res.status(500).json({ message: err.message });

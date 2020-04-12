@@ -1,224 +1,179 @@
-var shuffle = require('shuffle-array')
+var shuffle = require('shuffle-array');
+const _ = require('lodash');
 const Uno = require('../utils/uno');
 const common = require('../utils/common');
 const mongodb = require('../model/mongodb');
-const _ = require('lodash');
 
 const cards = Uno.getCards();
 
-async function getGameStatus(req, res, next) {
+function removePrivateFields(gameData, moreFields = []) {
+    delete gameData.playersCards;
+    delete gameData.deck;
+    delete gameData.games;
+    moreFields.forEach(o => delete gameData[o]);
+}
+
+function preProcessGameData(gameData, updateObj = {}) {
+    gameData = Object.assign(gameData, updateObj);
+    gameData.players = gameData.players.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
+    removePrivateFields(gameData);
+}
+
+async function getGameStatus(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
-        }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'ROOM_NOT_FOUND' });
-        }
-        let room = roomData[0];
-        room.myCards = room.playersCards ? room.playersCards[req.player._id] || [] : [];
-        if (room.playersCards)
-            room.players = room.players.map(o => Object.assign(o, { cards: room.playersCards[o._id].length }));
-        delete room.playersCards;
-        delete room.deck;
-        delete room.games;
-        res.json(room);
+        let { gameData, player } = req;
+        const myCards = gameData.playersCards[player._id] || [];
+        preProcessGameData(gameData);
+        gameData.myCards = myCards;
+        res.json(gameData);
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
+    }
+}
+
+function getCreataRoomInsertObj(roomName, player) {
+    return {
+        roomName: roomName,
+        status: 'CREATED',
+        players: [player],
+        actions: [],
+        messages: [],
+        admin: player,
+        games: [],
+        playersCards: {},
+        createdBy: player,
+        createdAt: new Date(),
+        updatedBy: player,
+        updatedAt: new Date(),
     }
 }
 
 async function createRoom(req, res) {
     try {
-        const player = _.pick(req.player, ['_id', 'name']);
-        const insertObj = { roomName: req.body.roomName, createdBy: player, updatedBy: player, status: 'CREATED', players: [player], messages: [], createdAt: new Date(), updatedAt: new Date(), games: [] };
-        const roomData = await mongodb.insertOne('uno', insertObj);
-        res.json({ _id: roomData.ops[0]._id });
+        const insertObj = getCreataRoomInsertObj(req.body.roomName, req.player);
+        const gameData = await mongodb.insertOne('uno', insertObj);
+        res.json({ _id: gameData.ops[0]._id });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function joinRoom(req, res, next) {
+async function joinRoom(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
+        let { gameData, player } = req;
+        if (gameData.players.length > 10) {
+            return res.status(400).json({ message: 'Room is Full', errCode: 'ROOM_IS_FULL' });
         }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length) {
-            return res.json({ message: 'Joined Already' });
-        }
-        if (roomData[0].status != 'CREATED') {
-            return res.json({ message: 'Cannot join once game started. u can spectate or view results at any time' });
-        }
-        if (roomData[0].players.length > 10) {
-            return res.json({ message: 'Cannot join once since room is full. u can spectate or view results at any time' });
-        }
-        const player = _.pick(req.player, ['_id', 'name']);
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $push: { players: player }, $set: { updatedAt: new Date(), updatedBy: player } });
-        res.json({ message: 'Success' });
-        io.emit(roomID, 'some event');
+        let updateObj = { updatedAt: new Date(), updatedBy: player };
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, {
+            $push: { players: player },
+            $set: updateObj
+        });
+        res.send();
+        io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...updateObj } });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function submitCard(req, res, next) {
+async function submitCard(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
-        }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].status != 'STARTED') {
-            return res.status(400).json({ message: 'Cant submit a card on ended match' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length == 0) {
-            return res.status(400).json({ message: 'Player cannot submit card without joining game' });
-        }
-        if (roomData[0].currentPlayer._id != req.player._id) {
-            return res.status(400).json({ message: 'Player can take action only on their turn' });
-        }
+        let { gameData, player } = req;
         const { chosenCard } = req.body;
-        const cardIndex = _.findIndex(roomData[0].playersCards[req.player._id], { color: chosenCard.color, type: chosenCard.type });
+        const cardIndex = _.findIndex(gameData.playersCards[player._id], { color: chosenCard.color, type: chosenCard.type });
         if (cardIndex == -1) {
-            return res.status(400).json({ message: 'Chosen card not present in your deck' });
+            return res.status(400).json({ message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' });
         }
-        let { lastCard, inc } = roomData[0];
+        let { lastCard, inc } = gameData;
         if (!Uno.isActionValid(lastCard, chosenCard)) {
-            return res.status(400).json({ message: 'Chosen card does not match with last card' });
+            return res.status(400).json({ message: 'Chosen card does not match with last card', errCode: 'CHOSEN_CARD_NOT_MATCHED' });
         }
         if (chosenCard.type == Uno.card_types.REVERSE_CARD) {
             inc = -inc;
         }
-        let nextPlayer = Uno.getNextPlayer(roomData[0].players, roomData[0].currentPlayer, inc);
+        let nextPlayer = Uno.getNextPlayer(gameData.players, gameData.currentPlayer, inc);
         switch (chosenCard.type) {
             case Uno.card_types.WILD_CARD_DRAW_FOUR_CARDS:
-                roomData[0].playersCards[nextPlayer._id] = roomData[0].playersCards[nextPlayer._id].concat(roomData[0].deck.splice(0, 2));
+                gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
             case Uno.card_types.DRAW_TWO_CARDS:
-                roomData[0].playersCards[nextPlayer._id] = roomData[0].playersCards[nextPlayer._id].concat(roomData[0].deck.splice(0, 2));
+                gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
             case Uno.card_types.SKIP_CARD:
-                nextPlayer = Uno.getNextPlayer(roomData[0].players, nextPlayer, inc);
+                nextPlayer = Uno.getNextPlayer(gameData.players, nextPlayer, inc);
                 break;
         }
-        roomData[0].deck.splice(common.randomNumber(0, roomData[0].deck.length - 1), 0, lastCard);
-        roomData[0].playersCards[req.player._id].splice(cardIndex, 1);
-        let updateObj = { lastCard: chosenCard, playersCards: roomData[0].playersCards, inc: inc, currentPlayer: nextPlayer, deck: roomData[0].deck };
-        switch (roomData[0].playersCards[req.player._id].length) {
+        gameData.deck.splice(common.randomNumber(0, gameData.deck.length - 1), 0, lastCard);
+        gameData.playersCards[player._id].splice(cardIndex, 1);
+        let updateObj = {
+            lastLastCard: gameData.lastCard, lastCard: chosenCard, playersCards: gameData.playersCards, inc: inc,
+            currentPlayer: nextPlayer, deck: gameData.deck,
+            updatedAt: new Date(), updatedBy: player
+        };
+        switch (gameData.playersCards[player._id].length) {
             case 0:
                 updateObj.status = 'ENDED';
                 break;
             case 1:
                 if (req.body.isUnoClicked != 'true') {
-                    updateObj.playersCards[req.player._id] = updateObj.playersCards[req.player._id].concat(updateObj.deck.splice(0, 2));
+                    updateObj.playersCards[player._id] = updateObj.playersCards[player._id].concat(updateObj.deck.splice(0, 2));
                 }
                 break;
         }
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player } });
-        req.room = Object.assign(roomData[0], updateObj);
-        next();
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        preProcessGameData(updateObj, { players: gameData.players });
+        io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
+        updateObj.myCards = gameData.playersCards[player._id] || [];
+        res.json(updateObj);
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function passCard(req, res, next) {
+async function passCard(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
+        let { gameData, player } = req;
+        if (gameData.currentPlayer.pass != true) {
+            return res.status(400).json({ message: 'Player can pass only when they take card from deck', errCode: 'PLAYER_CANT_PASS' });
         }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].status != 'STARTED') {
-            return res.status(400).json({ message: 'Cant take a card on ended match' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length == 0) {
-            return res.status(400).json({ message: 'Player cannot take card without joining game' });
-        }
-        if (roomData[0].currentPlayer._id != req.player._id) {
-            return res.status(400).json({ message: 'Player can take action only on their turn' });
-        }
-        if (roomData[0].currentPlayer.pass != true) {
-            return res.status(400).json({ message: 'Player can pass only when they take card from deck' });
-        }
-        let updateObj = { currentPlayer: Uno.getNextPlayer(roomData[0].players, roomData[0].currentPlayer, roomData[0].inc) };
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player } });
-        req.room = Object.assign(roomData[0], updateObj);
-        next();
+        let updateObj = {
+            currentPlayer: Uno.getNextPlayer(gameData.players, gameData.currentPlayer, gameData.inc),
+            updatedAt: new Date(), updatedBy: player
+        };
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        res.json(updateObj);
+        io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: updateObj });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function takeCard(req, res, next) {
+async function takeCard(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
+        let { gameData, player } = req;
+        if (gameData.currentPlayer.pass) {
+            return res.status(400).json({ message: 'You have taken a card from deck already', errCode: 'PLAYER_TOOK_CARD_ALREADY' });
         }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].status != 'STARTED') {
-            return res.status(400).json({ message: 'Cant take a card on ended match' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length == 0) {
-            return res.status(400).json({ message: 'Player cannot take card without joining game' });
-        }
-        if (roomData[0].currentPlayer._id != req.player._id) {
-            return res.status(400).json({ message: 'Player can take action only on their turn' });
-        }
-        if (roomData[0].currentPlayer.pass) {
-            return res.status(400).json({ message: 'You have taken a card from deck already' });
-        }
-        let updateObj = { playersCards: roomData[0].playersCards, currentPlayer: roomData[0].currentPlayer, deck: roomData[0].deck };
-        updateObj.playersCards[req.player._id].push(roomData[0].deck[0]);
+        gameData.currentPlayer.pass = true;
+        let updateObj = {
+            playersCards: gameData.playersCards, currentPlayer: gameData.currentPlayer, deck: gameData.deck,
+            updatedAt: new Date(), updatedBy: player
+        };
+        updateObj.playersCards[player._id].push(gameData.deck[0]);
         updateObj.deck.splice(0, 1);
-        updateObj.currentPlayer.pass = true;
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player } });
-        req.room = Object.assign(roomData[0], updateObj);
-        next();
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        preProcessGameData(updateObj, { players: gameData.players });
+        io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...updateObj } });
+        updateObj.myCards = gameData.playersCards[player._id] || [];
+        res.json(updateObj);
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function startGame(req, res, next) {
+async function startGame(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
-        }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].status != 'CREATED') {
-            return res.status(400).json({ message: 'Cant start a match again' });
-        }
-        if (roomData[0].players.length <= 1) {
-            return res.status(400).json({ message: 'Atleast 2 players needed to start a game' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length == 0) {
-            return res.status(400).json({ message: 'Player cannot start without joining game' });
+        let { gameData, player } = req;
+        if (gameData.players.length <= 1) {
+            return res.status(400).json({ message: 'Atleast 2 players needed to start a game', errCode: 'CANT_START_GAME' });
         }
         const deck = shuffle(cards, { 'copy': true });
         let lastCard = null;
@@ -229,7 +184,7 @@ async function startGame(req, res, next) {
             lastCard = card;
             deck.splice(num, 1);
         }
-        let playersCards = {}, players = shuffle(roomData[0].players, { 'copy': true });
+        let playersCards = {}, players = shuffle(gameData.players, { 'copy': true });
         for (let i = 0; i < players.length; i++) {
             const playerId = players[i]._id;
             playersCards[playerId] = [];
@@ -240,89 +195,73 @@ async function startGame(req, res, next) {
                 deck.splice(num, 1);
             }
         }
-        const updateObj = { players, status: 'STARTED', lastCard, playersCards, deck, startedBy: req.player, currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1 };
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player } });
-        req.room = Object.assign(roomData[0], updateObj);
-        next();
+        const updateObj = {
+            players, status: 'STARTED', lastCard, playersCards, deck, startedBy: player,
+            currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1,
+            updatedAt: new Date(), updatedBy: player
+        };
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        preProcessGameData(updateObj);
+        updateObj.myCards = gameData.playersCards[player._id] || [];
+        res.json(updateObj);
+        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pickBy(updateObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-async function restart(req, res, next) {
+async function restart(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
-        }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        if (roomData[0].status != 'ENDED') {
-            return res.status(400).json({ message: 'Cant restart unless match ends' });
-        }
-        if (roomData[0].players.filter(o => o._id == req.player._id).length == 0) {
-            return res.status(400).json({ message: 'Player cannot restart unless player present in game' });
-        }
-        const updateObj = { status: 'CREATED' };
-        const finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID) }, { $set: { ...updateObj, updatedAt: new Date(), updatedBy: req.player }, $push: { games: roomData[0] } });
-        req.room = Object.assign(roomData[0], updateObj);
-        next();
+        let { gameData, player } = req;
+        const updateObj = { status: 'CREATED', updatedAt: new Date(), updatedBy: player };
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj, $push: { games: gameData } });
+        res.json(updateObj);
+        io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: updateObj });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
 async function leaveRoom(req, res) {
     try {
-        const roomID = req.params.id;
-        if (typeof roomID != "string" || roomID.trim().length == 0) {
-            return res.status(400).json({ message: 'roomID should not be empty' });
+        let { gameData, player, playerIndex } = req;
+        gameData.players.splice(playerIndex, 1);
+        let updateObj = { players: gameData.players, updatedAt: new Date(), updatedBy: player };
+        if (gameData.players.length && gameData.admin._id == player._id) {
+            updateObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
         }
-        const roomData = await mongodb.findById('uno', roomID);
-        if (roomData.length == 0) {
-            return res.status(400).json({ message: 'Invalid Room ID' });
-        }
-        const playerIndex = _.findIndex(roomData[0].players, { _id: req.player._id });
-        if (playerIndex == -1) {
-            return res.status(400).json({ message: 'Player cannot leave unless player present in game' });
-        }
-        roomData[0].players.splice(playerIndex, 1);
-        let updateObj = { players: roomData[0].players };
-        if (roomData[0].status == 'STARTED') {
-            if (roomData[0].players.length == 1) {
+        if (gameData.status == 'STARTED') {
+            if (gameData.players.length == 1) {
                 updateObj.status = 'ENDED';
             }
-            roomData[0].playersCards[req.player._id].forEach(card => {
-                roomData[0].deck.splice(common.randomNumber(0, roomData[0].deck.length - 1), 0, card);
+            gameData.playersCards[player._id].forEach(card => {
+                gameData.deck.splice(common.randomNumber(0, gameData.deck.length - 1), 0, card);
             });
-            updateObj.deck = roomData[0].deck;
-            if (roomData[0].players.length > 1 && roomData[0].currentPlayer._id == req.player._id) {
-                updateObj.currentPlayer = Uno.getNextPlayer(roomData[0].players, roomData[0].currentPlayer);
+            updateObj.deck = gameData.deck;
+            if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
+                updateObj.currentPlayer = Uno.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
-        let finalResult = await mongodb.updateOne('uno', { _id: mongodb.getId(roomID), "players._id": req.player._id }, { $set: updateObj });
-        res.json({ message: 'success' });
-        io.emit(roomID, 'some event');
+        let updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId, "players._id": player._id }, { $set: updateObj });
+        res.send();
+        removePrivateFields(updateObj, ['players']);
+        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...updateObj, playerIndex: playerIndex } });
     } catch (err) {
-        console.log("ERR::" + req.path, err);
-        res.status(500).json({ message: err.message });
+        common.serverError(req, res, err);
     }
 }
 
-function removeProtectedFields(req, res) {
-    let { room } = req;
-    room.myCards = room.playersCards[req.player._id];
-    if (room.playersCards)
-        room.players = room.players.map(o => Object.assign(o, { cards: room.playersCards[o._id].length }));
-    delete room.playersCards;
-    delete room.deck;
-    delete room.games;
-    io.emit(room._id, 'some event');
-    res.json(room);
+async function newMessage(req, res) {
+    try {
+        const { text } = req.body;
+        let { player } = req;
+        const message = { text: text, ...player, createdAt: new Date() };
+        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $push: { messages: message } });
+        res.send();
+        io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
+    } catch (err) {
+        common.serverError(req, res, err);
+    }
 }
 
 module.exports = {
@@ -334,6 +273,6 @@ module.exports = {
     takeCard,
     startGame,
     restart,
-    removeProtectedFields,
     leaveRoom,
+    newMessage,
 }

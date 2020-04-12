@@ -5,7 +5,7 @@ function getId(id) {
     return mongodb.ObjectId(id);
 }
 
-exports.getId = getId;
+exports.ObjectId = mongodb.ObjectId;
 
 let db = null;
 
@@ -31,7 +31,7 @@ exports.find = function (collectionName, query) {
 
 exports.findById = function (collectionName, id) {
     return new Promise((resolve, reject) => {
-        db.collection(collectionName).find({ _id: getId(id) }).toArray(function (err, result) {
+        db.collection(collectionName).findOne({ _id: mongodb.ObjectId(id) }, function (err, result) {
             if (err) return reject(err);
             resolve(result);
         });

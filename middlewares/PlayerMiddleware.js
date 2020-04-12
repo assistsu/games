@@ -1,16 +1,16 @@
 const jwt = require('../utils/jwt');
-const assert = require('assert');
+const common = require('../utils/common');
+const _ = require('lodash');
 
-function validatePlayer(req, res, next) {
+async function validatePlayer(req, res, next) {
     try {
         const playerToken = req.headers['x-player-token'];
-        const player = jwt.verify(playerToken);
-        assert.equal(typeof player._id, "string");
-        req.player = player;
+        let player = jwt.verify(playerToken);
+        req.player = _.pick(player, ['_id', 'name', 'isOnline']);
         next();
     } catch (err) {
         console.log("ERR::validatePlayer::" + req.path, err);
-        return res.status(401).json({ message: 'Login Required' });
+        return res.status(401.1).json({ message: 'Invalid Player Token', errCode: 'INVALID_PLAYER_TOKEN' });
     }
 }
 
