@@ -61,7 +61,7 @@ async function createRoom(req, res) {
 async function joinRoom(req, res) {
     try {
         let { gameData, player } = req;
-        if (gameData.players.length > 10) {
+        if (gameData.players.length >= 10) {
             return res.status(400).json({ message: 'Room is Full', errCode: 'ROOM_IS_FULL' });
         }
         let updateObj = { updatedAt: new Date(), updatedBy: player };
@@ -121,7 +121,7 @@ async function submitCard(req, res) {
         const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = gameData.playersCards[player._id] || [];
+        updateObj.myCards = updateObj.playersCards[player._id] || [];
         res.json(updateObj);
     } catch (err) {
         common.serverError(req, res, err);
@@ -162,7 +162,7 @@ async function takeCard(req, res) {
         const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = gameData.playersCards[player._id] || [];
+        updateObj.myCards = updateObj.playersCards[player._id] || [];
         res.json(updateObj);
     } catch (err) {
         common.serverError(req, res, err);
@@ -202,7 +202,7 @@ async function startGame(req, res) {
         };
         const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
         preProcessGameData(updateObj);
-        updateObj.myCards = gameData.playersCards[player._id] || [];
+        updateObj.myCards = playersCards[player._id] || [];
         res.json(updateObj);
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pickBy(updateObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {

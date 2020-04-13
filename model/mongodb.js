@@ -1,17 +1,13 @@
 const mongodb = require('mongodb');
 const config = require('../config');
 
-function getId(id) {
-    return mongodb.ObjectId(id);
-}
-
 exports.ObjectId = mongodb.ObjectId;
 
 let db = null;
 
 exports.connect = function () {
     return new Promise((resolve, reject) => {
-        mongodb.MongoClient.connect(config.mongodb.url, function (err, client) {
+        mongodb.MongoClient.connect(config.mongodb.url, { useUnifiedTopology: true }, function (err, client) {
             if (err) return reject(err);
             console.log("Connected successfully to mongo server");
             db = client.db(config.mongodb.dbName);

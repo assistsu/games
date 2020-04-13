@@ -1,0 +1,15 @@
+module.exports = {
+    EMPTY_PLAYER_NAME: { message: 'Player name should not be empty', errCode: 'EMPTY_PLAYER_NAME' },
+    EXCEEDED_PLAYER_NAME: { message: 'Player name cannot be more than 15 letters', errCode: 'EXCEEDED_PLAYER_NAME' },
+    INVALID_PLAYER_TOKEN: { message: 'Invalid Player Token', errCode: 'INVALID_PLAYER_TOKEN' },
+    SERVER_ERROR: { message: 'Server Error', errCode: 'SERVER_ERROR' },
+    INVALID_ROOM_ID: { message: 'Invalid Room ID', errCode: 'INVALID_ROOM_ID' },
+    ROOM_NOT_FOUND: { message: 'Room Not found', errCode: 'ROOM_NOT_FOUND' },
+    PLAYER_NOT_FOUND_IN_ROOM: { message: 'Player not found in Room', errCode: 'PLAYER_NOT_FOUND_IN_ROOM' },
+    PLAYER_FOUND_IN_ROOM: { message: 'Player already in Room', errCode: 'PLAYER_FOUND_IN_ROOM' },
+    ROOM_IS_FULL: { message: 'Room is Full', errCode: 'ROOM_IS_FULL' },
+    NOT_YOUR_MOVE: { message: 'This is not your move', errCode: 'NOT_YOUR_MOVE' },
+    GAME_STATUS_IS_NOT_CREATED: { message: "Game status should be created", errCode: 'GAME_STATUS_IS_NOT_CREATED' },
+    GAME_STATUS_IS_NOT_STARTED: { message: 'Game status should be started', errCode: 'GAME_STATUS_IS_NOT_STARTED' },
+    NOT_AN_ADMIN: { message: 'You are not a admin', errCode: 'NOT_AN_ADMIN' },
+}
