@@ -121,7 +121,7 @@ async function submitCard(req, res) {
         const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = updateObj.playersCards[player._id] || [];
+        updateObj.myCards = gameData.playersCards[player._id] || [];
         res.json(updateObj);
     } catch (err) {
         common.serverError(req, res, err);
@@ -162,7 +162,7 @@ async function takeCard(req, res) {
         const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = updateObj.playersCards[player._id] || [];
+        updateObj.myCards = gameData.playersCards[player._id] || [];
         res.json(updateObj);
     } catch (err) {
         common.serverError(req, res, err);
