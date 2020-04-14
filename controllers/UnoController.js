@@ -14,7 +14,7 @@ function removePrivateFields(gameData, moreFields = []) {
 }
 
 function preProcessGameData(gameData, updateObj = {}) {
-    gameData = Object.assign(gameData, updateObj);
+    Object.assign(gameData, updateObj);
     gameData.players = gameData.players.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
     removePrivateFields(gameData);
 }
@@ -245,7 +245,7 @@ async function leaveRoom(req, res) {
         let updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId, "players._id": player._id }, { $set: updateObj });
         res.send();
         removePrivateFields(updateObj, ['players']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...updateObj, playerIndex: playerIndex } });
+        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...updateObj, playerIndex: playerIndex } });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -264,6 +264,18 @@ async function newMessage(req, res) {
     }
 }
 
+async function nudgePlayer(req, res) {
+    try {
+        const { playerId } = req.body;
+        if (req.player._id == playerId) return res.status(400).json({ message: 'You cannot nudge yourself', errCode: 'NUDGING_HIMSELF' });
+        if (_.findIndex(req.gameData.players, { _id: playerId }) == -1) return res.status(400).json({ message: 'The player you are nudging not in your room', errCode: 'NUDGE_PLAYER_NOT_IN_ROOM' });
+        res.send();
+        io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
+    } catch (err) {
+        common.serverError(req, res, err);
+    }
+}
+
 module.exports = {
     getGameStatus,
     createRoom,
@@ -275,4 +287,5 @@ module.exports = {
     restart,
     leaveRoom,
     newMessage,
+    nudgePlayer
 }

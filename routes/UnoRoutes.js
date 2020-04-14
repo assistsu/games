@@ -70,4 +70,10 @@ app.post('/:id/leave',
     UnoController.leaveRoom
 );
 
+app.post('/:id/nudge',
+    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    UnoMiddleware.playerShouldPresentInGame,
+    UnoController.nudgePlayer
+);
+
 module.exports = app;

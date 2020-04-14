@@ -16,7 +16,7 @@ describe('Player apis tests', function () {
     describe('create api tests', function () {
         it('with valid playerName', () => {
             sinon.stub(mongodb, 'insertOne').resolves(PlayerData.NEW_PLAYER);
-            const expectedBody = Object.assign(PlayerData.NEW_PLAYER.ops[0], { token: jwt.sign(PlayerData.NEW_PLAYER.ops[0]) })
+            const expectedBody = { ...PlayerData.NEW_PLAYER.ops[0], token: jwt.sign(PlayerData.NEW_PLAYER.ops[0]) };
             return app.post(basepath + '/new').send({ playerName: 'sangam' }).expect(200, expectedBody);
         });
         it('with no playerName', () => {
