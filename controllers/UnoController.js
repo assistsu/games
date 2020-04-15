@@ -270,7 +270,7 @@ async function nudgePlayer(req, res) {
         if (req.player._id == playerId) return res.status(400).json({ message: 'You cannot nudge yourself', errCode: 'NUDGING_HIMSELF' });
         if (_.findIndex(req.gameData.players, { _id: playerId }) == -1) return res.status(400).json({ message: 'The player you are nudging not in your room', errCode: 'NUDGE_PLAYER_NOT_IN_ROOM' });
         res.send();
-        io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
+        // io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
         common.serverError(req, res, err);
     }
