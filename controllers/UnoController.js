@@ -271,7 +271,7 @@ async function nudgePlayer(req, res) {
         if (_.findIndex(req.gameData.players, { _id: playerId }) == -1) return res.status(400).json({ message: 'The player you are nudging not in your room', errCode: 'NUDGE_PLAYER_NOT_IN_ROOM' });
         if (req.gameData.playerNudged && req.gameData.playerNudged[playerId]) {
             const diff = new Date().getTime() - req.gameData.playerNudged[playerId];
-            if (diff < 10000) {
+            if (diff < 3000) {
                 return res.status(400).json({ message: 'Player already nudged', errCode: 'PLAYER_NUDGED_ALREADY' });
             }
         }
