@@ -1,11 +1,11 @@
 const mongodb = require('mongodb');
 const config = require('../config');
 
-exports.ObjectId = mongodb.ObjectId;
+const ObjectId = mongodb.ObjectId;
 
 let db = null;
 
-exports.connect = function () {
+function connect() {
     return new Promise((resolve, reject) => {
         mongodb.MongoClient.connect(config.mongodb.url, { useUnifiedTopology: true }, function (err, client) {
             if (err) return reject(err);
@@ -16,7 +16,7 @@ exports.connect = function () {
     })
 }
 
-exports.find = function (collectionName, query) {
+function find(collectionName, query) {
     return new Promise((resolve, reject) => {
         db.collection(collectionName).find(query).toArray(function (err, result) {
             if (err) return reject(err);
@@ -25,16 +25,16 @@ exports.find = function (collectionName, query) {
     });
 }
 
-exports.findById = function (collectionName, id) {
+function findById(collectionName, id) {
     return new Promise((resolve, reject) => {
-        db.collection(collectionName).findOne({ _id: mongodb.ObjectId(id) }, function (err, result) {
+        db.collection(collectionName).findOne({ _id: ObjectId(id) }, function (err, result) {
             if (err) return reject(err);
             resolve(result);
         });
     });
 }
 
-exports.insertOne = function (collectionName, insertObj) {
+function insertOne(collectionName, insertObj) {
     return new Promise((resolve, reject) => {
         db.collection(collectionName).insertOne(insertObj, function (err, res) {
             if (err) return reject(err);
@@ -43,11 +43,25 @@ exports.insertOne = function (collectionName, insertObj) {
     });
 }
 
-exports.updateOne = function (collectionName, queryObj, updateObj) {
+function updateOne(collectionName, queryObj, updateObj) {
     return new Promise((resolve, reject) => {
         db.collection(collectionName).updateOne(queryObj, updateObj, function (err, res) {
             if (err) return reject(err);
             resolve(res);
         });
     });
+}
+
+function updateOneById(collectionName, id, updateObj) {
+    return updateOne(collectionName, { _id: ObjectId(id) }, updateObj);
+}
+
+module.exports = {
+    ObjectId,
+    connect,
+    find,
+    findById,
+    insertOne,
+    updateOne,
+    updateOneById,
 }

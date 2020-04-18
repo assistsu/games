@@ -28,10 +28,3 @@ exports.getCards = function () {
 exports.isActionValid = function (lastCard, chosenCard) {
     return chosenCard.color == 'dark' || lastCard.color == chosenCard.color || lastCard.type == chosenCard.type || (lastCard.color == 'dark' && lastCard.chosenColor == chosenCard.color);
 }
-
-exports.getNextPlayer = function (players, currentPlayer, inc) {
-    const currentPlayerInd = _.findIndex(players, { _id: currentPlayer._id });
-    const nextPlayerInd = (currentPlayerInd + inc) % players.length;
-    const nextPlayer = players[nextPlayerInd >= 0 ? nextPlayerInd : players.length - 1];
-    return nextPlayer;
-}

@@ -1,4 +1,4 @@
-var shuffle = require('shuffle-array');
+const shuffle = require('shuffle-array');
 const _ = require('lodash');
 const Uno = require('../utils/uno');
 const common = require('../utils/common');
@@ -19,7 +19,7 @@ function preProcessGameData(gameData, updateObj = {}) {
     removePrivateFields(gameData);
 }
 
-async function getGameStatus(req, res) {
+function getGameStatus(req, res) {
     try {
         let { gameData, player } = req;
         const myCards = gameData.playersCards[player._id] || [];
@@ -65,11 +65,11 @@ async function joinRoom(req, res) {
             return res.status(400).json({ message: 'Room is Full', errCode: 'ROOM_IS_FULL' });
         }
         let updateObj = { updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, {
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, {
             $push: { players: player },
             $set: updateObj
         });
-        res.send();
+        res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...updateObj } });
     } catch (err) {
         common.serverError(req, res, err);
@@ -91,14 +91,14 @@ async function submitCard(req, res) {
         if (chosenCard.type == Uno.card_types.REVERSE_CARD) {
             inc = -inc;
         }
-        let nextPlayer = Uno.getNextPlayer(gameData.players, gameData.currentPlayer, inc);
+        let nextPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer, inc);
         switch (chosenCard.type) {
             case Uno.card_types.WILD_CARD_DRAW_FOUR_CARDS:
                 gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
             case Uno.card_types.DRAW_TWO_CARDS:
                 gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
             case Uno.card_types.SKIP_CARD:
-                nextPlayer = Uno.getNextPlayer(gameData.players, nextPlayer, inc);
+                nextPlayer = common.getNextPlayer(gameData.players, nextPlayer, inc);
                 break;
         }
         gameData.deck.splice(common.randomNumber(0, gameData.deck.length - 1), 0, lastCard);
@@ -118,7 +118,7 @@ async function submitCard(req, res) {
                 }
                 break;
         }
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
         updateObj.myCards = gameData.playersCards[player._id] || [];
@@ -135,10 +135,10 @@ async function passCard(req, res) {
             return res.status(400).json({ message: 'Player can pass only when they take card from deck', errCode: 'PLAYER_CANT_PASS' });
         }
         let updateObj = {
-            currentPlayer: Uno.getNextPlayer(gameData.players, gameData.currentPlayer, gameData.inc),
+            currentPlayer: common.getNextPlayer(gameData.players, gameData.currentPlayer, gameData.inc),
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
         res.json(updateObj);
         io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: updateObj });
     } catch (err) {
@@ -159,7 +159,7 @@ async function takeCard(req, res) {
         };
         updateObj.playersCards[player._id].push(gameData.deck[0]);
         updateObj.deck.splice(0, 1);
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
         preProcessGameData(updateObj, { players: gameData.players });
         io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...updateObj } });
         updateObj.myCards = gameData.playersCards[player._id] || [];
@@ -200,11 +200,11 @@ async function startGame(req, res) {
             currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1,
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
         preProcessGameData(updateObj);
         updateObj.myCards = playersCards[player._id] || [];
         res.json(updateObj);
-        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pickBy(updateObj, ['updatedAt', 'updatedBy']) });
+        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick(updateObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -214,7 +214,7 @@ async function restart(req, res) {
     try {
         let { gameData, player } = req;
         const updateObj = { status: 'CREATED', updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj, $push: { games: gameData } });
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj, $push: { games: gameData } });
         res.json(updateObj);
         io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: updateObj });
     } catch (err) {
@@ -239,11 +239,11 @@ async function leaveRoom(req, res) {
             });
             updateObj.deck = gameData.deck;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                updateObj.currentPlayer = Uno.getNextPlayer(gameData.players, gameData.currentPlayer);
+                updateObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
-        let updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId, "players._id": player._id }, { $set: updateObj });
-        res.send();
+        let updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
+        res.sendStatus(200);
         removePrivateFields(updateObj, ['players']);
         io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...updateObj, playerIndex: playerIndex } });
     } catch (err) {
@@ -256,8 +256,8 @@ async function newMessage(req, res) {
         const { text } = req.body;
         let { player } = req;
         const message = { text: text, ...player, createdAt: new Date() };
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $push: { messages: message } });
-        res.send();
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $push: { messages: message } });
+        res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
         common.serverError(req, res, err);
@@ -277,8 +277,8 @@ async function nudgePlayer(req, res) {
         }
         let updateObj = {};
         updateObj[`playerNudged.${playerId}`] = new Date().getTime();
-        const updatedGameData = await mongodb.updateOne('uno', { _id: req.roomObjectId }, { $set: updateObj });
-        res.send();
+        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
+        res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
         common.serverError(req, res, err);

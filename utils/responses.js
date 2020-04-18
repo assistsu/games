@@ -11,5 +11,10 @@ module.exports = {
     NOT_YOUR_MOVE: { message: 'This is not your move', errCode: 'NOT_YOUR_MOVE' },
     GAME_STATUS_IS_NOT_CREATED: { message: "Game status should be created", errCode: 'GAME_STATUS_IS_NOT_CREATED' },
     GAME_STATUS_IS_NOT_STARTED: { message: 'Game status should be started', errCode: 'GAME_STATUS_IS_NOT_STARTED' },
+    GAME_STATUS_IS_NOT_ENDED: { message: 'Game status should be ended', errCode: 'GAME_STATUS_IS_NOT_ENDED' },
     NOT_AN_ADMIN: { message: 'You are not a admin', errCode: 'NOT_AN_ADMIN' },
+    INVALID_CARD: { message: 'Chosencard is invalid', errCode: 'INVALID_CARD' },
+    CHOSEN_CARD_NOT_PRESENT: { message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' },
+    PLAYER_SPOOFING: { message: 'Spoofing not allowed', errCode: 'PLAYER_SPOOFING' },
+    CANT_START_GAME: { message: 'Atleast 2 players needed to start a game', errCode: 'CANT_START_GAME' },
 }

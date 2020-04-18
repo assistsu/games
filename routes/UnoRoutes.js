@@ -2,77 +2,78 @@ const express = require('express');
 const app = express.Router();
 
 const UnoController = require('../controllers/UnoController');
+const GameMiddleware = require('../middlewares/GameMiddleware');
 const UnoMiddleware = require('../middlewares/UnoMiddleware');
 
 app.post('/create', UnoController.createRoom);
 
 app.get('/:id/info',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
     UnoController.getGameStatus
 );
 
 app.post('/:id/join',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldNotPresentInGame,
-    UnoMiddleware.gameStatusShouldBeCreated,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldNotPresentInGame,
+    GameMiddleware.gameStatusShouldBeCreated,
     UnoController.joinRoom,
 );
 
 app.post('/:id/start',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
-    UnoMiddleware.isAdmin,
-    UnoMiddleware.gameStatusShouldBeCreated,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isAdmin,
+    GameMiddleware.gameStatusShouldBeCreated,
     UnoController.startGame
 );
 
 app.post('/:id/restart',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
-    UnoMiddleware.isAdmin,
-    UnoMiddleware.gameStatusShouldBeEnded,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isAdmin,
+    GameMiddleware.gameStatusShouldBeEnded,
     UnoController.restart
 );
 
 app.post('/:id/submit-card',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
-    UnoMiddleware.gameStatusShouldBeStarted,
-    UnoMiddleware.isMyMove,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.gameStatusShouldBeStarted,
+    GameMiddleware.isMyMove,
     UnoController.submitCard
 );
 
 app.post('/:id/take-card',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
-    UnoMiddleware.gameStatusShouldBeStarted,
-    UnoMiddleware.isMyMove,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.gameStatusShouldBeStarted,
+    GameMiddleware.isMyMove,
     UnoController.takeCard
 );
 
 app.post('/:id/pass-card',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
-    UnoMiddleware.gameStatusShouldBeStarted,
-    UnoMiddleware.isMyMove,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.gameStatusShouldBeStarted,
+    GameMiddleware.isMyMove,
     UnoController.passCard
 );
 
 app.post('/:id/message',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
     UnoController.newMessage
 );
 
 app.post('/:id/leave',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
     UnoController.leaveRoom
 );
 
 app.post('/:id/nudge',
-    UnoMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
-    UnoMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
+    GameMiddleware.playerShouldPresentInGame,
     UnoController.nudgePlayer
 );
 
