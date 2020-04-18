@@ -144,7 +144,7 @@ async function startGame(req, res) {
         let playersCards = {}, players = shuffle(gameData.players, { 'copy': true });
         let _currentPlayer = players[common.randomNumber(0, players.length - 1)];
         let currentPlayer;
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 52; i++) {
             if (playersCards[_currentPlayer._id] == null) { playersCards[_currentPlayer._id] = [] }
             const ind = common.randomNumber(0, deck.length - 1);
             playersCards[_currentPlayer._id].push(deck[ind]);
@@ -165,7 +165,6 @@ async function startGame(req, res) {
         res.json(updateObj);
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick(updateObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
-        console.log("err::", err);
         common.serverError(req, res, err);
     }
 }
