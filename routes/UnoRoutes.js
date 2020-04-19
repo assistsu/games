@@ -74,6 +74,7 @@ app.post('/:id/leave',
 app.post('/:id/nudge',
     GameMiddleware.isValidRoomID, UnoMiddleware.isRoomExist,
     GameMiddleware.playerShouldPresentInGame,
+    GameMiddleware.isAdmin,
     UnoController.nudgePlayer
 );
 
