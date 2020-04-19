@@ -11,12 +11,13 @@ function removePrivateFields(gameData, moreFields = []) {
     delete gameData.playersCards;
     delete gameData.deck;
     delete gameData.games;
+    delete gameData.rounds;
     moreFields.forEach(o => delete gameData[o]);
 }
 
 function preProcessGameData(gameData, updateObj = {}) {
     Object.assign(gameData, updateObj);
-    gameData.players = gameData.players.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
+    gameData.playersInGame = gameData.playersInGame.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
     removePrivateFields(gameData);
 }
 
@@ -90,11 +91,13 @@ async function submitCard(req, res) {
         const isSameType = currentRoundCards.length && currentRoundCards[0].type == chosenCard.type;
         const isLastCard = currentRoundCards.length == gameData.playersInGame.length - 1;
         if (currentRoundCards.length == 0 || (isSameType && !isLastCard)) {
-            updateObj.currentRoundPlayerCards[player._id] = chosenCard;
+            gameData.currentRoundPlayerCards[player._id] = chosenCard;
+            updateObj.currentRoundPlayerCards = gameData.currentRoundPlayerCards;
             updateObj.currentPlayer = common.getNextPlayer(gameData.playersInGame, player, 1);
         } else if (isSameType && isLastCard) {
-            updateObj.currentRoundPlayerCards[player._id] = chosenCard;
-            $pushObj.rounds = updateObj.currentRoundPlayerCards;
+            gameData.currentRoundPlayerCards[player._id] = chosenCard;
+            currentRoundCards.push(chosenCard);
+            $pushObj.rounds = { type: 'ALL_SUBMITTED', cards: currentRoundCards };
             updateObj.currentRoundPlayerCards = {};
             updateObj.currentPlayer = _.find(gameData.playersInGame, { _id: Ass.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) });
         }
@@ -102,8 +105,9 @@ async function submitCard(req, res) {
             const isPlayerSpoofing = _.findIndex(gameData.playersCards[player._id], { type: currentRoundCards[0].type }) != -1;
             if (isPlayerSpoofing) return res.status(400).json({ message: 'Spoofing not allowed', errCode: 'PLAYER_SPOOFING' });
             const playerId = Ass.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards);
+            currentRoundCards.push(chosenCard);
+            $pushObj.rounds = { type: 'HIT', playerGotHit: _.find(gameData.playersInGame, { _id: playerId }), cards: currentRoundCards };
             gameData.playersCards[playerId] = gameData.playersCards[playerId].concat(currentRoundCards);
-            gameData.playersCards[playerId].push(chosenCard)
             updateObj.currentRoundPlayerCards = {};
             updateObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
         }
@@ -128,7 +132,10 @@ async function submitCard(req, res) {
             updateObj.assPlayers = gameData.assPlayers;
         }
         const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj, { playersInGame: gameData.playersInGame, players: gameData.players });
+        preProcessGameData(updateObj, {
+            playersInGame: gameData.playersInGame, players: gameData.players,
+            lastRound: $pushObj.rounds, currentRoundPlayerCards: gameData.currentRoundPlayerCards
+        });
         io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
         updateObj.myCards = gameData.playersCards[player._id] || [];
         res.json(updateObj);
@@ -148,15 +155,17 @@ async function startGame(req, res) {
             if (playersCards[_currentPlayer._id] == null) { playersCards[_currentPlayer._id] = [] }
             const ind = common.randomNumber(0, deck.length - 1);
             playersCards[_currentPlayer._id].push(deck[ind]);
-            _currentPlayer = common.getNextPlayer(players, _currentPlayer, 1);
-            if (deck[ind].type == 'SPADE' && deck[ind].number == 13)
+            if (deck[ind].type == 'SPADE' && deck[ind].number == 14) {
+                console.log(deck[ind], _currentPlayer);
                 currentPlayer = _currentPlayer;
+            }
             deck.splice(ind, 1);
+            _currentPlayer = common.getNextPlayer(players, _currentPlayer, 1);
         }
         const updateObj = {
             status: 'STARTED', currentRoundPlayerCards: {}, playersCards, rounds: [], startedBy: player,
             escapedPlayers: [],
-            currentPlayer: _currentPlayer,
+            currentPlayer,
             updatedAt: new Date(), updatedBy: player
         };
         const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
@@ -202,7 +211,7 @@ async function leaveRoom(req, res) {
         let updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
         res.sendStatus(200);
         removePrivateFields(updateObj, ['players']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...updateObj, playerIndex: playerIndex } });
+        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...updateObj, leftPlayer: player } });
     } catch (err) {
         common.serverError(req, res, err);
     }
