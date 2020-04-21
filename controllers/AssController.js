@@ -106,13 +106,13 @@ async function submitCard(req, res) {
             if (isPlayerSpoofing) return res.status(400).json({ message: 'Spoofing not allowed', errCode: 'PLAYER_SPOOFING' });
             const playerId = Ass.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards);
             currentRoundCards.push(chosenCard);
-            $pushObj.rounds = { type: 'HIT', playerGotHit: _.find(gameData.playersInGame, { _id: playerId }), cards: currentRoundCards };
+            $pushObj.rounds = { type: 'HIT', playerGotHit: _.find(gameData.playersInGame, { _id: playerId }), hitBy: player, cards: currentRoundCards };
             gameData.playersCards[playerId] = gameData.playersCards[playerId].concat(currentRoundCards);
             updateObj.currentRoundPlayerCards = {};
             updateObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
         }
         updateObj.playersCards[player._id].splice(req.cardIndex, 1);
-        if (updateObj.playersCards[player._id].length == 0) {
+        if (updateObj.playersCards[player._id].length == 0 && updateObj.currentPlayer._id != player._id) {
             delete updateObj.playersCards[player._id];
             gameData.playersInGame.splice(playerIndex, 1);
             updateObj.playersInGame = gameData.playersInGame;
