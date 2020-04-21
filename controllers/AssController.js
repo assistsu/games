@@ -235,15 +235,15 @@ async function nudgePlayer(req, res) {
         const { playerId } = req.body;
         if (req.player._id == playerId) return res.status(400).json({ message: 'You cannot nudge yourself', errCode: 'NUDGING_HIMSELF' });
         if (_.findIndex(req.gameData.players, { _id: playerId }) == -1) return res.status(400).json({ message: 'The player you are nudging not in your room', errCode: 'NUDGE_PLAYER_NOT_IN_ROOM' });
-        if (req.gameData.playerNudged && req.gameData.playerNudged[playerId]) {
-            const diff = new Date().getTime() - req.gameData.playerNudged[playerId];
-            if (diff < 3000) {
-                return res.status(400).json({ message: 'Player already nudged', errCode: 'PLAYER_NUDGED_ALREADY' });
-            }
-        }
-        let updateObj = {};
-        updateObj[`playerNudged.${playerId}`] = new Date().getTime();
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
+        // if (req.gameData.playerNudged && req.gameData.playerNudged[playerId]) {
+        //     const diff = new Date().getTime() - req.gameData.playerNudged[playerId];
+        //     if (diff < 3000) {
+        //         return res.status(400).json({ message: 'Player already nudged', errCode: 'PLAYER_NUDGED_ALREADY' });
+        //     }
+        // }
+        // let updateObj = {};
+        // updateObj[`playerNudged.${playerId}`] = new Date().getTime();
+        // const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
