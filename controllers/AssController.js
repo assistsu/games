@@ -15,8 +15,8 @@ function removePrivateFields(gameData, moreFields = []) {
     moreFields.forEach(o => delete gameData[o]);
 }
 
-function preProcessGameData(gameData, updateObj = {}) {
-    Object.assign(gameData, updateObj);
+function preProcessGameData(gameData, $setObj = {}) {
+    Object.assign(gameData, $setObj);
     gameData.playersInGame = gameData.playersInGame.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
     removePrivateFields(gameData);
 }
@@ -66,13 +66,13 @@ async function createRoom(req, res) {
 async function joinRoom(req, res) {
     try {
         let { player } = req;
-        let updateObj = { updatedAt: new Date(), updatedBy: player };
+        let $setObj = { updatedAt: new Date(), updatedBy: player };
         const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, {
             $push: { players: player, playersInGame: player },
-            $set: updateObj
+            $set: $setObj
         });
         res.sendStatus(200);
-        io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...updateObj } });
+        io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...$setObj } });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -80,8 +80,8 @@ async function joinRoom(req, res) {
 
 async function submitCard(req, res) {
     try {
-        let { gameData, player, playerIndex, chosenCard } = req;
-        let updateObj = {
+        let { gameData, player, chosenCard } = req;
+        let $setObj = {
             playersCards: gameData.playersCards,
             currentRoundPlayerCards: gameData.currentRoundPlayerCards,
             updatedAt: new Date(), updatedBy: player
@@ -91,15 +91,14 @@ async function submitCard(req, res) {
         const isSameType = currentRoundCards.length && currentRoundCards[0].type == chosenCard.type;
         const isLastCard = currentRoundCards.length == gameData.playersInGame.length - 1;
         if (currentRoundCards.length == 0 || (isSameType && !isLastCard)) {
-            gameData.currentRoundPlayerCards[player._id] = chosenCard;
-            updateObj.currentRoundPlayerCards = gameData.currentRoundPlayerCards;
-            updateObj.currentPlayer = common.getNextPlayer(gameData.playersInGame, player, 1);
+            $setObj.currentRoundPlayerCards[player._id] = chosenCard;
+            $setObj.currentPlayer = common.getNextPlayer(gameData.playersInGame, player, 1);
         } else if (isSameType && isLastCard) {
             gameData.currentRoundPlayerCards[player._id] = chosenCard;
             currentRoundCards.push(chosenCard);
             $pushObj.rounds = { type: 'ALL_SUBMITTED', cards: currentRoundCards };
-            updateObj.currentRoundPlayerCards = {};
-            updateObj.currentPlayer = _.find(gameData.playersInGame, { _id: Ass.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) });
+            $setObj.currentRoundPlayerCards = {};
+            $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: Ass.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) });
         }
         else {
             const isPlayerSpoofing = _.findIndex(gameData.playersCards[player._id], { type: currentRoundCards[0].type }) != -1;
@@ -108,37 +107,52 @@ async function submitCard(req, res) {
             currentRoundCards.push(chosenCard);
             $pushObj.rounds = { type: 'HIT', playerGotHit: _.find(gameData.playersInGame, { _id: playerId }), hitBy: player, cards: currentRoundCards };
             gameData.playersCards[playerId] = gameData.playersCards[playerId].concat(currentRoundCards);
-            updateObj.currentRoundPlayerCards = {};
-            updateObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
+            $setObj.currentRoundPlayerCards = {};
+            $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
         }
-        updateObj.playersCards[player._id].splice(req.cardIndex, 1);
-        if (updateObj.playersCards[player._id].length == 0 && updateObj.currentPlayer._id != player._id) {
-            delete updateObj.playersCards[player._id];
-            gameData.playersInGame.splice(playerIndex, 1);
-            updateObj.playersInGame = gameData.playersInGame;
-            if (gameData.assPlayers[player._id]) {
-                gameData.assPlayers[player._id]--;
-                if (gameData.assPlayers[player._id] == 0) {
-                    delete gameData.assPlayers[player._id];
+        $setObj.playersCards[player._id].splice(req.cardIndex, 1);
+        if ($pushObj.rounds != null) {
+            let isAnyAssPlayerDone = false;
+            const donePlayers = gameData.playersInGame.filter(o => $setObj.playersCards[o._id].length == 0);
+            donePlayers.map(o => {
+                if ($setObj.playersCards[o._id].length) return;
+                isAnyAssPlayerDone = true;
+                delete $setObj.playersCards[o._id];
+                gameData.playersInGame.splice(_.findIndex(gameData.playersInGame, { _id: o._id }), 1);
+                if (gameData.assPlayers[o._id]) {
+                    isAnyAssPlayerDone = true;
+                    gameData.assPlayers[o._id]--;
+                    if (gameData.assPlayers[o._id] == 0) {
+                        delete gameData.assPlayers[o._id];
+                    }
                 }
-                updateObj.assPlayers = gameData.assPlayers;
+            });
+            if (donePlayers.length) {
+                $setObj.playersInGame = gameData.playersInGame;
+                if (isAnyAssPlayerDone) {
+                    $setObj.assPlayers = gameData.assPlayers;
+                }
             }
         }
         if (gameData.playersInGame.length == 1) {
-            updateObj.status = 'ENDED';
+            $setObj.status = 'ENDED';
             if (gameData.assPlayers[gameData.playersInGame[0]] == null)
                 gameData.assPlayers[gameData.playersInGame[0]] = 0;
             gameData.assPlayers[gameData.playersInGame[0]]++;
-            updateObj.assPlayers = gameData.assPlayers;
+            $setObj.assPlayers = gameData.assPlayers;
         }
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj, {
+        let updateObj = { $set: $setObj };
+        if (Object.keys($pushObj).length) {
+            updateObj.$push = $pushObj;
+        }
+        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, updateObj);
+        preProcessGameData($setObj, {
             playersInGame: gameData.playersInGame, players: gameData.players,
             lastRound: $pushObj.rounds, currentRoundPlayerCards: gameData.currentRoundPlayerCards
         });
-        io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = gameData.playersCards[player._id] || [];
-        res.json(updateObj);
+        io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...$setObj } });
+        $setObj.myCards = gameData.playersCards[player._id] || [];
+        res.json($setObj);
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -156,23 +170,22 @@ async function startGame(req, res) {
             const ind = common.randomNumber(0, deck.length - 1);
             playersCards[_currentPlayer._id].push(deck[ind]);
             if (deck[ind].type == 'SPADE' && deck[ind].number == 14) {
-                console.log(deck[ind], _currentPlayer);
                 currentPlayer = _currentPlayer;
             }
             deck.splice(ind, 1);
             _currentPlayer = common.getNextPlayer(players, _currentPlayer, 1);
         }
-        const updateObj = {
+        const $setObj = {
             status: 'STARTED', currentRoundPlayerCards: {}, playersCards, rounds: [], startedBy: player,
             escapedPlayers: [],
-            currentPlayer,
+            currentPlayer: gameData.players[0],
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj, { players: gameData.players, playersInGame: gameData.playersInGame });
-        updateObj.myCards = playersCards[player._id];
-        res.json(updateObj);
-        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick(updateObj, ['updatedAt', 'updatedBy']) });
+        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
+        preProcessGameData($setObj, { players: gameData.players, playersInGame: gameData.playersInGame });
+        $setObj.myCards = playersCards[player._id];
+        res.json($setObj);
+        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -181,10 +194,10 @@ async function startGame(req, res) {
 async function restart(req, res) {
     try {
         let { gameData, player } = req;
-        const updateObj = { status: 'CREATED', playersInGame: gameData.players, assPlayers: {}, updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj, $push: { games: gameData } });
-        res.json(updateObj);
-        io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: updateObj });
+        const $setObj = { status: 'CREATED', playersInGame: gameData.players, assPlayers: {}, updatedAt: new Date(), updatedBy: player };
+        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj, $push: { games: gameData } });
+        res.json($setObj);
+        io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -195,23 +208,23 @@ async function leaveRoom(req, res) {
         let { gameData, player, playerIndex } = req;
         gameData.playersInGame.splice(playerIndex, 1);
         gameData.players.splice(_.findIndex(gameData.players, { _id: player._id }), 1);
-        let updateObj = { assPlayers: {}, players: gameData.players, playersInGame: gameData.playersInGame, updatedAt: new Date(), updatedBy: player };
+        let $setObj = { assPlayers: {}, players: gameData.players, playersInGame: gameData.playersInGame, updatedAt: new Date(), updatedBy: player };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            updateObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {
-                updateObj.status = 'ENDED';
+                $setObj.status = 'ENDED';
             }
-            updateObj.deck = gameData.deck;
+            $setObj.deck = gameData.deck;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                updateObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
+                $setObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
-        let updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
+        let updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        removePrivateFields(updateObj, ['players']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...updateObj, leftPlayer: player } });
+        removePrivateFields($setObj, ['players','playersInGame']);
+        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...$setObj, leftPlayer: player } });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -241,9 +254,9 @@ async function nudgePlayer(req, res) {
         //         return res.status(400).json({ message: 'Player already nudged', errCode: 'PLAYER_NUDGED_ALREADY' });
         //     }
         // }
-        // let updateObj = {};
-        // updateObj[`playerNudged.${playerId}`] = new Date().getTime();
-        // const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: updateObj });
+        // let $setObj = {};
+        // $setObj[`playerNudged.${playerId}`] = new Date().getTime();
+        // const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
