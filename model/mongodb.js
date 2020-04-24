@@ -25,13 +25,17 @@ function find(collectionName, query) {
     });
 }
 
-function findById(collectionName, id) {
+function findOne(collectionName, query) {
     return new Promise((resolve, reject) => {
-        db.collection(collectionName).findOne({ _id: ObjectId(id) }, function (err, result) {
+        db.collection(collectionName).findOne(query, function (err, result) {
             if (err) return reject(err);
             resolve(result);
         });
     });
+}
+
+function findById(collectionName, id) {
+    return findOne(collectionName, { _id: ObjectId(id) });
 }
 
 function insertOne(collectionName, insertObj) {
@@ -52,7 +56,7 @@ function updateOne(collectionName, queryObj, updateObj) {
     });
 }
 
-function updateOneById(collectionName, id, updateObj) {
+function updateById(collectionName, id, updateObj) {
     return updateOne(collectionName, { _id: ObjectId(id) }, updateObj);
 }
 
@@ -60,8 +64,9 @@ module.exports = {
     ObjectId,
     connect,
     find,
+    findOne,
     findById,
     insertOne,
     updateOne,
-    updateOneById,
+    updateById,
 }

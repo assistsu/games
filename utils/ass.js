@@ -1,5 +1,3 @@
-const _ = require('lodash');
-
 const cardTypes = ['SPADE', 'HEART', 'CLUB', 'DIAMOND'];
 exports.cardTypes = cardTypes;
 

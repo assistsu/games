@@ -70,7 +70,7 @@ describe('Uno apis tests', function () {
         });
         it('player is an admin', () => {
             sinon.stub(mongodb, 'findById').resolves(UnoData.CREATED_GAME);
-            sinon.stub(mongodb, 'updateOneById').resolves(UnoData.STARTED_GAME);
+            sinon.stub(mongodb, 'updateById').resolves(UnoData.STARTED_GAME);
             return app.post(basepath + '/123456789012/start').set('x-player-token', jwt.sign({ _id: '123' })).expect(200);
         });
     });
@@ -81,7 +81,7 @@ describe('Uno apis tests', function () {
         });
         it('player not exist in room', () => {
             sinon.stub(mongodb, 'findById').resolves(UnoData.CREATED_GAME);
-            sinon.stub(mongodb, 'updateOneById');
+            sinon.stub(mongodb, 'updateById');
             return app.post(basepath + '/123456789012/join').set('x-player-token', jwt.sign({ _id: '1234' })).expect(200, {});
         });
         it('player tries to join in full room', () => {
@@ -92,7 +92,7 @@ describe('Uno apis tests', function () {
     describe('Restart game api tests', function () {
         it('player not exist in room', () => {
             sinon.stub(mongodb, 'findById').resolves(UnoData.CREATED_GAME);
-            sinon.stub(mongodb, 'updateOneById');
+            sinon.stub(mongodb, 'updateById');
             return app.post(basepath + '/123456789012/restart').set('x-player-token', jwt.sign({ _id: '1234' })).expect(401, responses.PLAYER_NOT_FOUND_IN_ROOM);
         });
         it('player exist in room but not a admin', () => {
@@ -109,7 +109,8 @@ describe('Uno apis tests', function () {
         });
         it('admin tries to restart a ended game', () => {
             sinon.stub(mongodb, 'findById').resolves(UnoData.ENDED_GAME);
-            sinon.stub(mongodb, 'updateOneById').resolves(UnoData.CREATED_GAME);
+            sinon.stub(mongodb, 'updateById').resolves(UnoData.CREATED_GAME);
+            sinon.stub(mongodb, 'insertOne').resolves(UnoData.STARTED_GAME);
             return app.post(basepath + '/123456789012/restart').set('x-player-token', jwt.sign({ _id: '123' })).expect(200);
         });
     });

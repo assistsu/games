@@ -3,13 +3,13 @@ const _ = require('lodash');
 const Ass = require('../utils/ass');
 const common = require('../utils/common');
 const mongodb = require('../model/mongodb');
+const CommonModel = require('../model/Common');
 
 const collectionName = 'ass';
 const cards = Ass.getCards();
 
 function removePrivateFields(gameData, moreFields = []) {
     delete gameData.playersCards;
-    delete gameData.deck;
     delete gameData.games;
     delete gameData.rounds;
     moreFields.forEach(o => delete gameData[o]);
@@ -42,7 +42,6 @@ function getCreataRoomInsertObj(roomName, player) {
         actions: [],
         messages: [],
         admin: player,
-        games: [],
         playersCards: {},
         assPlayers: {},
         playerNudged: {},
@@ -67,7 +66,7 @@ async function joinRoom(req, res) {
     try {
         let { player } = req;
         let $setObj = { updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, {
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, {
             $push: { players: player, playersInGame: player },
             $set: $setObj
         });
@@ -80,7 +79,7 @@ async function joinRoom(req, res) {
 
 async function submitCard(req, res) {
     try {
-        let { gameData, player, chosenCard } = req;
+        let { gameData, player, chosenCard, cardIndex } = req;
         let $setObj = {
             playersCards: gameData.playersCards,
             currentRoundPlayerCards: gameData.currentRoundPlayerCards,
@@ -110,7 +109,7 @@ async function submitCard(req, res) {
             $setObj.currentRoundPlayerCards = {};
             $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
         }
-        $setObj.playersCards[player._id].splice(req.cardIndex, 1);
+        $setObj.playersCards[player._id].splice(cardIndex, 1);
         if ($pushObj.rounds != null) {
             let isAnyAssPlayerDone = false;
             const donePlayers = gameData.playersInGame.filter(o => $setObj.playersCards[o._id].length == 0);
@@ -145,7 +144,7 @@ async function submitCard(req, res) {
         if (Object.keys($pushObj).length) {
             updateObj.$push = $pushObj;
         }
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, updateObj);
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, updateObj);
         preProcessGameData($setObj, {
             playersInGame: gameData.playersInGame, players: gameData.players,
             lastRound: $pushObj.rounds, currentRoundPlayerCards: gameData.currentRoundPlayerCards
@@ -181,7 +180,7 @@ async function startGame(req, res) {
             currentPlayer: gameData.players[0],
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         preProcessGameData($setObj, { players: gameData.players, playersInGame: gameData.playersInGame });
         $setObj.myCards = playersCards[player._id];
         res.json($setObj);
@@ -195,7 +194,8 @@ async function restart(req, res) {
     try {
         let { gameData, player } = req;
         const $setObj = { status: 'CREATED', playersInGame: gameData.players, assPlayers: {}, updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj, $push: { games: gameData } });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        CommonModel.storeEndedGameData(collectionName, _.assign(gameData, _.pick($setObj, ['updatedAt', 'updatedBy'])));
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
@@ -216,14 +216,13 @@ async function leaveRoom(req, res) {
             if (gameData.players.length == 1) {
                 $setObj.status = 'ENDED';
             }
-            $setObj.deck = gameData.deck;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
                 $setObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
-        let updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
+        let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        removePrivateFields($setObj, ['players','playersInGame']);
+        removePrivateFields($setObj, ['players', 'playersInGame']);
         io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...$setObj, leftPlayer: player } });
     } catch (err) {
         common.serverError(req, res, err);
@@ -235,7 +234,7 @@ async function newMessage(req, res) {
         const { text } = req.body;
         let { player } = req;
         const message = { text: text, ...player, createdAt: new Date() };
-        const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $push: { messages: message } });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $push: { messages: message } });
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
@@ -256,7 +255,7 @@ async function nudgePlayer(req, res) {
         // }
         // let $setObj = {};
         // $setObj[`playerNudged.${playerId}`] = new Date().getTime();
-        // const updatedGameData = await mongodb.updateOneById(collectionName, req.roomObjectId, { $set: $setObj });
+        // const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {

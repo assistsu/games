@@ -85,7 +85,7 @@ describe('Ass apis tests', function () {
         });
         it('my move and with valid card and first card', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'HEART', number: 2 } })
@@ -93,7 +93,7 @@ describe('Ass apis tests', function () {
         });
         it('my move and with valid card and second card', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameRoundsNotFirstLastCardData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'HEART', number: 2 } })
@@ -101,7 +101,15 @@ describe('Ass apis tests', function () {
         });
         it('my move and with valid card and last card', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameRoundsLastCardData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
+            return app.post(basepath + '/123456789012/submit-card')
+                .set('x-player-token', jwt.sign({ _id: 'abc' }))
+                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .expect(200);
+        });
+        it('my move and with valid card and game end', () => {
+            sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameRoundsGameEndData());
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'HEART', number: 2 } })
@@ -116,7 +124,7 @@ describe('Ass apis tests', function () {
         });
         it('my move and with valid card and hitting', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameHittingData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'SPADE', number: 14 } })
@@ -124,7 +132,7 @@ describe('Ass apis tests', function () {
         });
         it('my move and my last card', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGamePlayerLastCardData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'HEART', number: 2 } })
@@ -132,7 +140,7 @@ describe('Ass apis tests', function () {
         });
         it('my move and my last card and ass in last match', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGamePlayerLastCardAssInLastGameData());
-            sinon.stub(mongodb, 'updateOneById').resolves(null);
+            sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'HEART', number: 2 } })
@@ -141,7 +149,7 @@ describe('Ass apis tests', function () {
         it('without stubbing findById', () => {
             return app.post(basepath + '/123456789012/submit-card').set('x-player-token', jwt.sign({ _id: '123' })).expect(500, responses.SERVER_ERROR);
         });
-        it('without stubbing updateOneById', () => {
+        it('without stubbing updateById', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGamePlayerLastCardAssInLastGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
@@ -182,7 +190,7 @@ describe('Ass apis tests', function () {
         });
         it('player is an admin', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getCreatedGameData());
-            sinon.stub(mongodb, 'updateOneById').resolves(AssData.getStartedGameData());
+            sinon.stub(mongodb, 'updateById').resolves(AssData.getStartedGameData());
             return app.post(basepath + '/123456789012/start').set('x-player-token', jwt.sign({ _id: '123' })).expect(200);
         });
         it('without stubbing', () => {
@@ -197,7 +205,7 @@ describe('Ass apis tests', function () {
         });
         it('player not exist in room', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getCreatedGameData());
-            sinon.stub(mongodb, 'updateOneById');
+            sinon.stub(mongodb, 'updateById');
             return app.post(basepath + '/123456789012/join').set('x-player-token', jwt.sign({ _id: '1234' })).expect(200, {});
         });
         it('player tries to join in full room', () => {
@@ -212,7 +220,7 @@ describe('Ass apis tests', function () {
     describe('Restart game api tests', function () {
         it('player not exist in room', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getCreatedGameData());
-            sinon.stub(mongodb, 'updateOneById');
+            sinon.stub(mongodb, 'updateById');
             return app.post(basepath + '/123456789012/restart').set('x-player-token', jwt.sign({ _id: '1234' })).expect(401, responses.PLAYER_NOT_FOUND_IN_ROOM);
         });
         it('non admin tries to restart', () => {
@@ -229,7 +237,8 @@ describe('Ass apis tests', function () {
         });
         it('admin tries to restart a ended game', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getEndedGameData());
-            sinon.stub(mongodb, 'updateOneById').resolves(AssData.getCreatedGameData());
+            sinon.stub(mongodb, 'updateById').resolves(AssData.getCreatedGameData());
+            sinon.stub(mongodb, 'insertOne').resolves(AssData.getStartedGameData());
             return app.post(basepath + '/123456789012/restart').set('x-player-token', jwt.sign({ _id: '123' })).expect(200);
         });
         it('without stubbing updateById', () => {

@@ -3,18 +3,19 @@ const _ = require('lodash');
 const Uno = require('../utils/uno');
 const common = require('../utils/common');
 const mongodb = require('../model/mongodb');
+const CommonModel = require('../model/Common');
 
 const cards = Uno.getCards();
+const collectionName = "uno";
 
 function removePrivateFields(gameData, moreFields = []) {
     delete gameData.playersCards;
     delete gameData.deck;
-    delete gameData.games;
     moreFields.forEach(o => delete gameData[o]);
 }
 
-function preProcessGameData(gameData, updateObj = {}) {
-    Object.assign(gameData, updateObj);
+function preProcessGameData(gameData, $setObj = {}) {
+    Object.assign(gameData, $setObj);
     gameData.players = gameData.players.map(o => Object.assign(o, { cards: (gameData.playersCards[o._id] || []).length }));
     removePrivateFields(gameData);
 }
@@ -39,7 +40,6 @@ function getCreataRoomInsertObj(roomName, player) {
         actions: [],
         messages: [],
         admin: player,
-        games: [],
         playersCards: {},
         createdBy: player,
         createdAt: new Date(),
@@ -51,7 +51,7 @@ function getCreataRoomInsertObj(roomName, player) {
 async function createRoom(req, res) {
     try {
         const insertObj = getCreataRoomInsertObj(req.body.roomName, req.player);
-        const gameData = await mongodb.insertOne('uno', insertObj);
+        const gameData = await mongodb.insertOne(collectionName, insertObj);
         res.json({ _id: gameData.ops[0]._id });
     } catch (err) {
         common.serverError(req, res, err);
@@ -64,13 +64,13 @@ async function joinRoom(req, res) {
         if (gameData.players.length >= 10) {
             return res.status(400).json({ message: 'Room is Full', errCode: 'ROOM_IS_FULL' });
         }
-        let updateObj = { updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, {
+        let $setObj = { updatedAt: new Date(), updatedBy: player };
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, {
             $push: { players: player },
-            $set: updateObj
+            $set: $setObj
         });
         res.sendStatus(200);
-        io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...updateObj } });
+        io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...$setObj } });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -103,26 +103,26 @@ async function submitCard(req, res) {
         }
         gameData.deck.splice(common.randomNumber(0, gameData.deck.length - 1), 0, lastCard);
         gameData.playersCards[player._id].splice(cardIndex, 1);
-        let updateObj = {
+        let $setObj = {
             lastLastCard: gameData.lastCard, lastCard: chosenCard, playersCards: gameData.playersCards, inc: inc,
             currentPlayer: nextPlayer, deck: gameData.deck,
             updatedAt: new Date(), updatedBy: player
         };
         switch (gameData.playersCards[player._id].length) {
             case 0:
-                updateObj.status = 'ENDED';
+                $setObj.status = 'ENDED';
                 break;
             case 1:
                 if (req.body.isUnoClicked != 'true') {
-                    updateObj.playersCards[player._id] = updateObj.playersCards[player._id].concat(updateObj.deck.splice(0, 2));
+                    $setObj.playersCards[player._id] = $setObj.playersCards[player._id].concat($setObj.deck.splice(0, 2));
                 }
                 break;
         }
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj, { players: gameData.players });
-        io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = gameData.playersCards[player._id] || [];
-        res.json(updateObj);
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        preProcessGameData($setObj, { players: gameData.players });
+        io.emit(req.params.id, { event: 'PLAYER_SUBMITTED_CARD', gameData: { ...$setObj } });
+        $setObj.myCards = gameData.playersCards[player._id] || [];
+        res.json($setObj);
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -134,13 +134,13 @@ async function passCard(req, res) {
         if (gameData.currentPlayer.pass != true) {
             return res.status(400).json({ message: 'Player can pass only when they take card from deck', errCode: 'PLAYER_CANT_PASS' });
         }
-        let updateObj = {
+        let $setObj = {
             currentPlayer: common.getNextPlayer(gameData.players, gameData.currentPlayer, gameData.inc),
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
-        res.json(updateObj);
-        io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: updateObj });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        res.json($setObj);
+        io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: $setObj });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -153,17 +153,17 @@ async function takeCard(req, res) {
             return res.status(400).json({ message: 'You have taken a card from deck already', errCode: 'PLAYER_TOOK_CARD_ALREADY' });
         }
         gameData.currentPlayer.pass = true;
-        let updateObj = {
+        let $setObj = {
             playersCards: gameData.playersCards, currentPlayer: gameData.currentPlayer, deck: gameData.deck,
             updatedAt: new Date(), updatedBy: player
         };
-        updateObj.playersCards[player._id].push(gameData.deck[0]);
-        updateObj.deck.splice(0, 1);
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj, { players: gameData.players });
-        io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...updateObj } });
-        updateObj.myCards = gameData.playersCards[player._id] || [];
-        res.json(updateObj);
+        $setObj.playersCards[player._id].push(gameData.deck[0]);
+        $setObj.deck.splice(0, 1);
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        preProcessGameData($setObj, { players: gameData.players });
+        io.emit(req.params.id, { event: 'PLAYER_TOOK_CARD', gameData: { ...$setObj } });
+        $setObj.myCards = gameData.playersCards[player._id] || [];
+        res.json($setObj);
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -195,16 +195,16 @@ async function startGame(req, res) {
                 deck.splice(num, 1);
             }
         }
-        const updateObj = {
+        const $setObj = {
             players, status: 'STARTED', lastCard, playersCards, deck, startedBy: player,
             currentPlayer: players[common.randomNumber(0, players.length - 1)], inc: 1,
             updatedAt: new Date(), updatedBy: player
         };
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
-        preProcessGameData(updateObj);
-        updateObj.myCards = playersCards[player._id] || [];
-        res.json(updateObj);
-        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick(updateObj, ['updatedAt', 'updatedBy']) });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        preProcessGameData($setObj);
+        $setObj.myCards = playersCards[player._id] || [];
+        res.json($setObj);
+        io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -213,10 +213,11 @@ async function startGame(req, res) {
 async function restart(req, res) {
     try {
         let { gameData, player } = req;
-        const updateObj = { status: 'CREATED', updatedAt: new Date(), updatedBy: player };
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj, $push: { games: gameData } });
-        res.json(updateObj);
-        io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: updateObj });
+        const $setObj = { status: 'CREATED', updatedAt: new Date(), updatedBy: player };
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        CommonModel.storeEndedGameData(collectionName, _.assign(gameData, _.pick($setObj, ['updatedAt', 'updatedBy'])));
+        res.json($setObj);
+        io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -226,26 +227,26 @@ async function leaveRoom(req, res) {
     try {
         let { gameData, player, playerIndex } = req;
         gameData.players.splice(playerIndex, 1);
-        let updateObj = { players: gameData.players, updatedAt: new Date(), updatedBy: player };
+        let $setObj = { players: gameData.players, updatedAt: new Date(), updatedBy: player };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            updateObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {
-                updateObj.status = 'ENDED';
+                $setObj.status = 'ENDED';
             }
             gameData.playersCards[player._id].forEach(card => {
                 gameData.deck.splice(common.randomNumber(0, gameData.deck.length - 1), 0, card);
             });
-            updateObj.deck = gameData.deck;
+            $setObj.deck = gameData.deck;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                updateObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
+                $setObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
-        let updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
+        let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        removePrivateFields(updateObj, ['players']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...updateObj, playerIndex: playerIndex } });
+        removePrivateFields($setObj, ['players']);
+        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...$setObj, playerIndex: playerIndex } });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -256,7 +257,7 @@ async function newMessage(req, res) {
         const { text } = req.body;
         let { player } = req;
         const message = { text: text, ...player, createdAt: new Date() };
-        const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $push: { messages: message } });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $push: { messages: message } });
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
@@ -275,9 +276,9 @@ async function nudgePlayer(req, res) {
         //         return res.status(400).json({ message: 'Player already nudged', errCode: 'PLAYER_NUDGED_ALREADY' });
         //     }
         // }
-        // let updateObj = {};
-        // updateObj[`playerNudged.${playerId}`] = new Date().getTime();
-        // const updatedGameData = await mongodb.updateOneById('uno', req.roomObjectId, { $set: updateObj });
+        // let $setObj = {};
+        // $setObj[`playerNudged.${playerId}`] = new Date().getTime();
+        // const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {

@@ -17,4 +17,9 @@ module.exports = {
     CHOSEN_CARD_NOT_PRESENT: { message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' },
     PLAYER_SPOOFING: { message: 'Spoofing not allowed', errCode: 'PLAYER_SPOOFING' },
     CANT_START_GAME: { message: 'Atleast 2 players needed to start a game', errCode: 'CANT_START_GAME' },
+    NOT_SAME_NUMBERS: { message: 'Chosencards numbers are not same', errCode: 'NOT_SAME_NUMBERS' },
+    PLAYER_ACTION_NOT_SUBMIT: { message: 'Your action should be submitting card', errCode: 'PLAYER_ACTION_NOT_SUBMIT' },
+    PLAYER_ACTION_NOT_TAKE: { message: 'Your action should be taking card', errCode: 'PLAYER_ACTION_NOT_TAKE' },
+    PLAYER_ACTION_NOT_TOOK: { message: "You didn't taken card yet", errCode: 'PLAYER_ACTION_NOT_TOOK' },
+    INVALID_TAKE_FROM: { message: 'Invalid take from', errCode: 'INVALID_TAKE_FROM' },
 }
