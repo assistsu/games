@@ -34,17 +34,19 @@ function isChosenCardValid(req, res, next) {
     if (!_.isArray(chosenCards) || chosenCards.length == 0) {
         return res.status(400).json({ message: "You didn't choose any cards", errCode: 'EMPTY_CHOSEN_CARDS' });
     }
-    let chosenNumber = null, cardsIndex = [];
+    let chosenNumber = null, cardsIndex = [], map = {};
     for (let i = 0; i < chosenCards.length; i++) {
         const chosenCard = _.pick(chosenCards[i], ['type', 'number']);
         chosenCard.number = parseInt(chosenCard.number);
         if (!LeastCountUtil.cardTypes.includes(chosenCard.type) || !(chosenCard.number > 0) || !(chosenCard.number < 14)) {
             return res.status(400).json({ message: 'Chosencard is invalid', errCode: 'INVALID_CARD' });
         }
-        const cardIndex = _.findIndex(req.gameData.playersCards[req.player._id], chosenCard);
+        const chosenCardAsKey=JSON.stringify(chosenCard);
+        const cardIndex = _.findIndex(req.gameData.playersCards[req.player._id], chosenCard, map[chosenCardAsKey] || 0);
         if (cardIndex == -1) {
             return res.status(400).json({ message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' });
         }
+        map[chosenCardAsKey] = cardIndex + 1;
         if (chosenNumber == null) { chosenNumber = chosenCard.number; }
         if (chosenCard.number != chosenNumber) {
             return res.status(400).json({ message: 'Chosencards numbers are not same', errCode: 'NOT_SAME_NUMBERS' });
