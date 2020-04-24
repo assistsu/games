@@ -72,13 +72,13 @@ app.post('/:id/take-card',
     LeastCountController.takeCard
 );
 
-app.post('/:id/pass',
+app.post('/:id/no-show',
     GameMiddleware.isValidRoomID, LeastCountMiddleware.isRoomExist,
     GameMiddleware.playerShouldPresentInGame,
     GameMiddleware.gameStatusShouldBeStarted,
     GameMiddleware.isMyMove,
-    LeastCountMiddleware.isPlayerActionTook,
-    LeastCountController.pass
+    LeastCountMiddleware.isPlayerActionDecide,
+    LeastCountController.noShow
 );
 
 app.post('/:id/show-cards',
@@ -86,7 +86,7 @@ app.post('/:id/show-cards',
     GameMiddleware.playerShouldPresentInGame,
     GameMiddleware.gameStatusShouldBeStarted,
     GameMiddleware.isMyMove,
-    LeastCountMiddleware.isPlayerActionTook,
+    LeastCountMiddleware.isPlayerActionDecide,
     LeastCountController.showCards
 );
 

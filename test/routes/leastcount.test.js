@@ -159,8 +159,8 @@ describe('Least count apis tests', function () {
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(400, responses.PLAYER_ACTION_NOT_TAKE);
         });
-        it('trying to take while action is TOOK', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGameData());
+        it('trying to take while action is DECIDE', () => {
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGameData());
             return app.post(basepath + '/123456789012/take-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(400, responses.PLAYER_ACTION_NOT_TAKE);
@@ -209,52 +209,52 @@ describe('Least count apis tests', function () {
                 .expect(500, responses.SERVER_ERROR);
         });
     });
-    describe('Pass api tests', function () {
+    describe('No Show api tests', function () {
         it('player not in the game', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: '124' }))
                 .expect(401, responses.PLAYER_NOT_FOUND_IN_ROOM);
         });
         it('game not started', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getEndedGameData());
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: '123' }))
                 .expect(400, responses.GAME_STATUS_IS_NOT_STARTED);
         });
         it('not my move', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: '123' }))
                 .expect(401, responses.NOT_YOUR_MOVE);
         });
-        it('trying to pass while action is SUBMIT', () => {
+        it('trying to no show while action is SUBMIT', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .expect(400, responses.PLAYER_ACTION_NOT_TOOK);
+                .expect(400, responses.PLAYER_ACTION_NOT_DECIDE);
         });
-        it('trying to pass while action is TAKE', () => {
+        it('trying to no show while action is TAKE', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTakeActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .expect(400, responses.PLAYER_ACTION_NOT_TOOK);
+                .expect(400, responses.PLAYER_ACTION_NOT_DECIDE);
         });
-        it('trying to pass while action is TOOK', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGameData());
-            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedTookActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+        it('trying to no show while action is DECIDE', () => {
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGameData());
+            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedDecideActionGameData());
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(200);
         });
         it('mongodb not connected', () => {
-            return app.post(basepath + '/123456789012/pass')
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: '123' }))
                 .expect(500, responses.SERVER_ERROR);
         });
         it('mongodb got disconnected before updating', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGameData());
-            return app.post(basepath + '/123456789012/pass')
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGameData());
+            return app.post(basepath + '/123456789012/no-show')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(500, responses.SERVER_ERROR);
         });
@@ -282,31 +282,31 @@ describe('Least count apis tests', function () {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .expect(400, responses.PLAYER_ACTION_NOT_TOOK);
+                .expect(400, responses.PLAYER_ACTION_NOT_DECIDE);
         });
         it('trying to show cards while action is TAKE', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTakeActionGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .expect(400, responses.PLAYER_ACTION_NOT_TOOK);
+                .expect(400, responses.PLAYER_ACTION_NOT_DECIDE);
         });
         it('trying to show cards and it bads show', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGameData());
-            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedTookActionGameData());
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGameData());
+            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedDecideActionGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(200);
         });
         it('trying to show cards and its good show', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGoodShowGameData());
-            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedTookActionGoodShowGameData());
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGoodShowGameData());
+            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedDecideActionGoodShowGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(200);
         });
         it('trying to show cards and its good show and not first time', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGoodShowNotFirstGameData());
-            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedTookActionGoodShowNotFirstGameData());
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGoodShowNotFirstGameData());
+            sinon.stub(mongodb, 'updateById').resolves(LeastCountData.getStartedDecideActionGoodShowNotFirstGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(200);
@@ -317,7 +317,7 @@ describe('Least count apis tests', function () {
                 .expect(500, responses.SERVER_ERROR);
         });
         it('mongodb got disconnected before updating', () => {
-            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedTookActionGameData());
+            sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedDecideActionGameData());
             return app.post(basepath + '/123456789012/show-cards')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .expect(500, responses.SERVER_ERROR);

@@ -20,6 +20,6 @@ module.exports = {
     NOT_SAME_NUMBERS: { message: 'Chosencards numbers are not same', errCode: 'NOT_SAME_NUMBERS' },
     PLAYER_ACTION_NOT_SUBMIT: { message: 'Your action should be submitting card', errCode: 'PLAYER_ACTION_NOT_SUBMIT' },
     PLAYER_ACTION_NOT_TAKE: { message: 'Your action should be taking card', errCode: 'PLAYER_ACTION_NOT_TAKE' },
-    PLAYER_ACTION_NOT_TOOK: { message: "You didn't taken card yet", errCode: 'PLAYER_ACTION_NOT_TOOK' },
+    PLAYER_ACTION_NOT_DECIDE: { message: "You didn't taken card yet", errCode: 'PLAYER_ACTION_NOT_DECIDE' },
     INVALID_TAKE_FROM: { message: 'Invalid take from', errCode: 'INVALID_TAKE_FROM' },
 }

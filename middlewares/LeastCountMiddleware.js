@@ -73,9 +73,9 @@ function isPlayerActionTake(req, res, next) {
     next();
 }
 
-function isPlayerActionTook(req, res, next) {
-    if (req.gameData.currentPlayerAction != 'TOOK') {
-        return res.status(400).json({ message: "You didn't taken card yet", errCode: 'PLAYER_ACTION_NOT_TOOK' });
+function isPlayerActionDecide(req, res, next) {
+    if (req.gameData.currentPlayerAction != 'DECIDE') {
+        return res.status(400).json({ message: "You didn't taken card yet", errCode: 'PLAYER_ACTION_NOT_DECIDE' });
     }
     next();
 }
@@ -107,7 +107,7 @@ module.exports = {
     isChosenCardValid,
     isPlayerActionSubmit,
     isPlayerActionTake,
-    isPlayerActionTook,
+    isPlayerActionDecide,
     validateTakeCardFields,
     gameStatusShouldbePlayerShowed,
     setCollectionName,

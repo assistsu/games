@@ -17,6 +17,7 @@ function getPublicFields(gameData) {
         'messages',
         'admin',
         'lastCards',
+        'rounds',
         'playersTotalPoints',
         'currentPlayer',
         'currentPlayerAction',
@@ -132,7 +133,8 @@ async function takeCard(req, res) {
     try {
         let { gameData, player } = req;
         let $setObj = {
-            currentPlayerAction: 'TOOK',
+            currentPlayerAction: 'DECIDE',
+            currentPlayer: common.getNextPlayer(gameData.players, gameData.currentPlayer, 1),
             updatedAt: new Date(), updatedBy: player
         };
         let takenCard;
@@ -150,11 +152,15 @@ async function takeCard(req, res) {
         gameData.playersPoints[player._id] += _.find(cards, takenCard).point;
         $setObj[`playersCards.${player._id}`] = gameData.playersCards[player._id];
         $setObj[`playersPoints.${player._id}`] = gameData.playersPoints[player._id];
+        let lastCards = gameData.currentPlayerDroppedCards.concat(gameData.lastCards);
+        let deck = gameData.deck.concat(lastCards.splice(2));
+        shuffle(deck);
+        _.assign($setObj, { lastCards, deck });
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
         io.emit(req.params.id, {
             event: 'PLAYER_TOOK_CARD',
-            gameData: _.assign($setObj, {
+            gameData: _.assign(getPublicFields($setObj), {
                 player: _.assign(req.player, { cardsCount: gameData.playersCards[player._id].length }),
             })
         });
@@ -197,7 +203,7 @@ async function startGame(req, res) {
             deck,
             startedBy: player,
             currentPlayer: players[common.randomNumber(0, players.length - 1)],
-            currentPlayerAction: 'SUBMIT',
+            currentPlayerAction: 'DECIDE',
             updatedAt: new Date(), updatedBy: player
         };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -208,22 +214,15 @@ async function startGame(req, res) {
     }
 }
 
-async function pass(req, res) {
+async function noShow(req, res) {
     try {
-        let { gameData, player } = req;
-        let lastCards = gameData.currentPlayerDroppedCards.concat(gameData.lastCards);
-        gameData.deck = gameData.deck.concat(lastCards.splice(2));
-        shuffle(gameData.deck);
         let $setObj = {
-            lastCards: lastCards,
-            deck: gameData.deck,
-            currentPlayer: common.getNextPlayer(gameData.players, player, 1),
             currentPlayerAction: 'SUBMIT',
-            updatedAt: new Date(), updatedBy: player
+            updatedAt: new Date(), updatedBy: req.player
         }
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: _.omit($setObj, ['deck']) });
+        io.emit(req.params.id, { event: 'PLAYER_NOT_SHOWED', gameData: $setObj });
     } catch (err) {
         common.serverError(req, res, err);
     }
@@ -259,10 +258,9 @@ async function showCards(req, res) {
                 'ENDED' :
                 'PLAYER_SHOWED',
             playersTotalPoints: playersTotalPoints,
-            showResult,
             updatedAt: new Date(), updatedBy: player,
         }
-        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
+        const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj, $push: { rounds: { playersPoints, showResult, showedBy: player } } });
         res.json($setObj)
         io.emit(req.params.id, { event: 'PLAYER_SHOWED', gameData: $setObj });
     } catch (err) {
@@ -273,7 +271,7 @@ async function showCards(req, res) {
 async function restart(req, res) {
     try {
         let { gameData, player } = req;
-        const $setObj = { status: 'CREATED', playersTotalPoints: null, updatedAt: new Date(), updatedBy: player };
+        const $setObj = { status: 'CREATED', playersTotalPoints: null, rounds: [], updatedAt: new Date(), updatedBy: player };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         CommonModel.storeEndedGameData(collectionName, _.assign(gameData, _.pick($setObj, ['updatedAt', 'updatedBy'])));
         res.json($setObj);
@@ -287,7 +285,14 @@ async function leaveRoom(req, res) {
     try {
         let { gameData, player, playerIndex } = req;
         gameData.players.splice(playerIndex, 1);
-        let $setObj = { players: gameData.players, updatedAt: new Date(), updatedBy: player };
+        delete gameData.playersPoints[player._id];
+        delete gameData.playersTotalPoints[player._id];
+        let $setObj = {
+            players: gameData.players,
+            playersPoints: gameData.playersPoints,
+            playersTotalPoints: gameData.playersTotalPoints,
+            updatedAt: new Date(), updatedBy: player
+        };
         if (gameData.players.length && gameData.admin._id == player._id) {
             $setObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
         }
@@ -296,6 +301,8 @@ async function leaveRoom(req, res) {
                 $setObj.status = 'ENDED';
             }
             $setObj.deck = shuffle(gameData.deck.concat(gameData.playersCards[player._id]));
+            delete gameData.playersCards[player._id];
+            $setObj.playersCards = gameData.playersCards;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
                 $setObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
@@ -317,7 +324,7 @@ module.exports = {
     joinRoom,
     submitCard,
     takeCard,
-    pass,
+    noShow,
     showCards,
     startGame,
     restart,

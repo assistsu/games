@@ -66,14 +66,15 @@ module.exports = Object.freeze({
             ],
             lastCards: [
                 { type: 'HEART', number: 7 },
-            ]
+            ],
+            currentPlayerDroppedCards: []
         }
     },
-    getStartedTookActionGameData: () => {
+    getStartedDecideActionGameData: () => {
         return {
             _id: '123456789012', status: 'STARTED', admin: { _id: '123' },
             currentPlayer: { _id: 'abc' },
-            currentPlayerAction: 'TOOK',
+            currentPlayerAction: 'DECIDE',
             players: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
@@ -94,14 +95,14 @@ module.exports = Object.freeze({
             ],
             lastCards: [
                 { type: 'HEART', number: 7 },
-            ]
+            ],
         }
     },
-    getStartedTookActionGoodShowGameData: () => {
+    getStartedDecideActionGoodShowGameData: () => {
         return {
             _id: '123456789012', status: 'STARTED', admin: { _id: '123' },
             currentPlayer: { _id: 'abc' },
-            currentPlayerAction: 'TOOK',
+            currentPlayerAction: 'DECIDE',
             players: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
@@ -117,11 +118,11 @@ module.exports = Object.freeze({
             }
         }
     },
-    getStartedTookActionGoodShowNotFirstGameData: () => {
+    getStartedDecideActionGoodShowNotFirstGameData: () => {
         return {
             _id: '123456789012', status: 'STARTED', admin: { _id: '123' },
             currentPlayer: { _id: 'abc' },
-            currentPlayerAction: 'TOOK',
+            currentPlayerAction: 'DECIDE',
             players: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
