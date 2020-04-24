@@ -9,8 +9,8 @@ exports.getCards = function () {
             if (point < 10) point++;
         }
     });
-    cards.push({ type: 'JOKER', number: 0, point: 0 });
-    cards.push({ type: 'JOKER', number: 0, point: 0 });
+    // cards.push({ type: 'JOKER', number: 0, point: 0 });
+    // cards.push({ type: 'JOKER', number: 0, point: 0 });
     return cards;
 }
 
