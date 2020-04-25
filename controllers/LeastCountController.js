@@ -234,22 +234,19 @@ async function showCards(req, res) {
         let isAnyoneHasMinimumPoints = LeastCountUtil.isAnyoneHasMinimumPoints(playersPoints, playersPoints[player._id]);
         let showResult = 'GOOD';
         if (isAnyoneHasMinimumPoints) {
-            if (playersTotalPoints == null) {
-                playersTotalPoints = {};
-                for (let id in playersPoints) {
-                    playersTotalPoints[id] = 0;
-                }
+            for (let id in playersPoints) {
+                playersPoints[id] = 0;
             }
-            playersTotalPoints[player._id] += 40;
+            playersPoints[player._id] += 40;
             showResult = 'BAD';
         } else {
             playersPoints[player._id] = 0;
-            if (playersTotalPoints == null) {
-                playersTotalPoints = playersPoints;
-            } else {
-                for (let id in playersPoints) {
-                    playersTotalPoints[id] += playersPoints[id];
-                }
+        }
+        if (playersTotalPoints == null) {
+            playersTotalPoints = playersPoints;
+        } else {
+            for (let id in playersPoints) {
+                playersTotalPoints[id] += playersPoints[id];
             }
         }
         let isAnyOneReachedMaxPoint = _.max(_.values(playersTotalPoints)) >= 80;
