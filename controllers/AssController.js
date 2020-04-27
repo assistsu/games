@@ -177,7 +177,7 @@ async function startGame(req, res) {
         const $setObj = {
             status: 'STARTED', currentRoundPlayerCards: {}, playersCards, rounds: [], startedBy: player,
             escapedPlayers: [],
-            currentPlayer: gameData.players[0],
+            currentPlayer,
             updatedAt: new Date(), updatedBy: player
         };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -222,8 +222,10 @@ async function leaveRoom(req, res) {
         }
         let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        removePrivateFields($setObj, ['players', 'playersInGame']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { ...$setObj, leftPlayer: player } });
+        io.emit(req.params.id, {
+            event: 'PLAYER_LEFT_ROOM',
+            gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
+        });
     } catch (err) {
         common.serverError(req, res, err);
     }

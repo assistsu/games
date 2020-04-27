@@ -176,7 +176,7 @@ function getDeck(times) {
 async function startGame(req, res) {
     try {
         let { gameData, player } = req;
-        const deckNeeds = Math.ceil(gameData.players.length / 7);
+        const deckNeeds = Math.ceil(gameData.players.length / 4);
         const deck = shuffle(getDeck(deckNeeds));
         let playersCards = {}, playersPoints = {}, players = shuffle(gameData.players, { 'copy': true });
         for (let i = 0; i < players.length; i++) {
@@ -308,7 +308,7 @@ async function leaveRoom(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, {
             event: 'PLAYER_LEFT_ROOM',
-            gameData: _.assign(_.omit($setObj, ['players']), { leftPlayer: player })
+            gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
         });
     } catch (err) {
         common.serverError(req, res, err);

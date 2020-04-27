@@ -245,8 +245,10 @@ async function leaveRoom(req, res) {
         }
         let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
-        removePrivateFields($setObj, ['players']);
-        io.emit(req.params.id, { event: 'PLAYER_LEFT_ROOM', gameData: { currentPlayer: gameData.currentPlayer, ...$setObj, playerIndex: playerIndex } });
+        io.emit(req.params.id, {
+            event: 'PLAYER_LEFT_ROOM',
+            gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
+        });
     } catch (err) {
         common.serverError(req, res, err);
     }
