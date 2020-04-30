@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const common = require('../utils/common');
 const mongodb = require('../model/mongodb');
-const io = require('../model/io');
 
 async function newMessage(req, res) {
     try {

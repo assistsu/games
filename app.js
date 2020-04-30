@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-require('./model/io').init(http);
+io=require('socket.io')(http);
 
 const bodyParser = require('body-parser');
 

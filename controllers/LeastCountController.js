@@ -3,7 +3,6 @@ const _ = require('lodash');
 const LeastCountUtil = require('../utils/LeastCount');
 const common = require('../utils/common');
 const mongodb = require('../model/mongodb');
-const io = require('../model/io');
 const CommonModel = require('../model/Common');
 
 const cards = LeastCountUtil.getCards();
