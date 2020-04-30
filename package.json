@@ -7,7 +7,8 @@
     "test": "mocha --recursive",
     "test-file": "mocha test/routes/leastcount.test.js",
     "test-with-coverage": "nyc npm test",
-    "start": "node server.js"
+    "start": "node server.js",
+    "serve": "NODE_ENV='prod' npm start"
   },
   "keywords": [],
   "author": "",
