@@ -21,6 +21,7 @@ if (process.env.NODE_ENV == 'prod') {
     });
 }
 
+app.use('/logs', express.static('./logs'));
 app.use('/assets', express.static('./games/assets'));
 
 app.get('*', function (req, res) {
