@@ -1,5 +1,4 @@
 const jwt = require('../utils/jwt');
-const common = require('../utils/common');
 const _ = require('lodash');
 
 async function validatePlayer(req, res, next) {

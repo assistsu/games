@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "test": "mocha --recursive",
-    "test-file": "mocha test/routes/leastcount.test.js",
+    "test-uno-api": "mocha test/routes/uno.test.js",
+    "test-ass-api": "mocha test/routes/ass.test.js",
+    "test-leastcount-api": "mocha test/routes/leastcount.test.js",
     "test-with-coverage": "nyc npm test",
     "start": "node server.js",
     "serve": "NODE_ENV='prod' npm start"

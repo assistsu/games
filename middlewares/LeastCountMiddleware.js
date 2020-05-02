@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const mongodb = require('../model/mongodb');
-const common = require('../utils/common');
-const LeastCountUtil = require('../utils/LeastCount');
+const CommonUtil = require('../utils/CommonUtil');
+const LeastCountUtil = require('../utils/LeastCountUtil');
 
 async function isRoomExist(req, res, next) {
     try {
@@ -11,7 +11,7 @@ async function isRoomExist(req, res, next) {
         }
         next();
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -37,10 +37,6 @@ function isChosenCardValid(req, res, next) {
     let chosenNumber = null, cardsIndex = [], map = {};
     for (let i = 0; i < chosenCards.length; i++) {
         const chosenCard = _.pick(chosenCards[i], ['type', 'number']);
-        chosenCard.number = parseInt(chosenCard.number);
-        if (!LeastCountUtil.cardTypes.includes(chosenCard.type) || !(chosenCard.number > 0) || !(chosenCard.number < 14)) {
-            return res.status(400).json({ message: 'Chosencard is invalid', errCode: 'INVALID_CARD' });
-        }
         const chosenCardAsKey=JSON.stringify(chosenCard);
         const cardIndex = _.findIndex(req.gameData.playersCards[req.player._id], chosenCard, map[chosenCardAsKey] || 0);
         if (cardIndex == -1) {

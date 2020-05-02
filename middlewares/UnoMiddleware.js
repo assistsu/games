@@ -1,5 +1,5 @@
 const mongodb = require('../model/mongodb');
-const common = require('../utils/common');
+const CommonUtil = require('../utils/CommonUtil');
 
 async function isRoomExist(req, res, next) {
     try {
@@ -9,7 +9,7 @@ async function isRoomExist(req, res, next) {
         }
         next();
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 

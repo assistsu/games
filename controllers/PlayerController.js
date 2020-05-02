@@ -1,6 +1,6 @@
 const jwt = require('../utils/jwt');
 const mongodb = require('../model/mongodb');
-const common = require('../utils/common');
+const CommonUtil = require('../utils/CommonUtil');
 
 async function createPlayer(req, res) {
     try {
@@ -10,7 +10,7 @@ async function createPlayer(req, res) {
         player.token = jwt.sign(player);
         res.json(player);
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 

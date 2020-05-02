@@ -1,11 +1,11 @@
 const shuffle = require('shuffle-array');
 const _ = require('lodash');
-const LeastCountUtil = require('../utils/LeastCount');
-const common = require('../utils/common');
+const LeastCountUtil = require('../utils/LeastCountUtil');
+const CommonUtil = require('../utils/CommonUtil');
 const mongodb = require('../model/mongodb');
 const CommonModel = require('../model/Common');
 
-const cards = LeastCountUtil.getCards();
+const cards = CommonUtil.getStandardDeck(LeastCountUtil.pointMapper);
 const collectionName = 'leastcount';
 
 function getPublicFields(gameData) {
@@ -53,7 +53,7 @@ function getGameStatus(req, res) {
         let { gameData, player } = req;
         res.json(getGameInfoForPlayer(gameData, player._id));
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -80,7 +80,7 @@ async function createRoom(req, res) {
         const gameData = await mongodb.insertOne(collectionName, insertObj);
         res.json({ _id: gameData.ops[0]._id });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -98,7 +98,7 @@ async function joinRoom(req, res) {
             gameData: _.assign($setObj, { player: player })
         });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -112,7 +112,8 @@ async function submitCard(req, res) {
         };
         _.pullAt(gameData.playersCards[player._id], cardsIndex);
         let myCards = gameData.playersCards[player._id];
-        let myPoints = gameData.playersPoints[player._id] - _.sumBy(chosenCards, o => _.find(cards, o).point);
+        const sumOfChosenCards = _.sumBy(chosenCards, o => LeastCountUtil.pointMapper(o.number));
+        let myPoints = gameData.playersPoints[player._id] - sumOfChosenCards;
         $setObj[`playersCards.${player._id}`] = myCards;
         $setObj[`playersPoints.${player._id}`] = myPoints;
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -125,7 +126,7 @@ async function submitCard(req, res) {
             })
         });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -134,7 +135,7 @@ async function takeCard(req, res) {
         let { gameData, player } = req;
         let $setObj = {
             currentPlayerAction: 'DECIDE',
-            currentPlayer: common.getNextPlayer(gameData.players, gameData.currentPlayer, 1),
+            currentPlayer: CommonUtil.getNextPlayer(gameData.players, gameData.currentPlayer, 1),
             updatedAt: new Date(), updatedBy: player
         };
         let takenCard;
@@ -149,7 +150,7 @@ async function takeCard(req, res) {
                 break;
         }
         gameData.playersCards[player._id].push(takenCard);
-        gameData.playersPoints[player._id] += _.find(cards, takenCard).point;
+        gameData.playersPoints[player._id] += LeastCountUtil.pointMapper(takenCard.number);
         $setObj[`playersCards.${player._id}`] = gameData.playersCards[player._id];
         $setObj[`playersPoints.${player._id}`] = gameData.playersPoints[player._id];
         let lastCards = gameData.currentPlayerDroppedCards.concat(gameData.lastCards);
@@ -165,7 +166,7 @@ async function takeCard(req, res) {
             })
         });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -184,14 +185,14 @@ async function startGame(req, res) {
             playersCards[playerId] = [];
             playersPoints[playerId] = 0;
             for (let j = 0; j < 7; j++) {
-                const ind = common.randomNumber(0, deck.length);
+                const ind = CommonUtil.randomNumber(0, deck.length);
                 const card = deck[ind];
                 playersCards[playerId].push(card);
                 playersPoints[playerId] += card.point;
                 deck.splice(ind, 1);
             }
         }
-        const ind = common.randomNumber(0, deck.length);
+        const ind = CommonUtil.randomNumber(0, deck.length);
         const lastCard = deck[ind];
         deck.splice(ind, 1);
         const $setObj = {
@@ -202,7 +203,7 @@ async function startGame(req, res) {
             playersPoints,
             deck,
             startedBy: player,
-            currentPlayer: players[common.randomNumber(0, players.length - 1)],
+            currentPlayer: players[CommonUtil.randomNumber(0, players.length - 1)],
             currentPlayerAction: 'DECIDE',
             updatedAt: new Date(), updatedBy: player
         };
@@ -210,7 +211,7 @@ async function startGame(req, res) {
         res.json(getGameInfoForPlayer($setObj, player._id));
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedBy']) });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -224,7 +225,7 @@ async function noShow(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'PLAYER_NOT_SHOWED', gameData: $setObj });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -261,7 +262,7 @@ async function showCards(req, res) {
         res.json($setObj)
         io.emit(req.params.id, { event: 'PLAYER_SHOWED', gameData: $setObj });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -274,7 +275,7 @@ async function restart(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 
@@ -291,7 +292,7 @@ async function leaveRoom(req, res) {
             updatedAt: new Date(), updatedBy: player
         };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            $setObj.admin = gameData.players[common.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {
@@ -301,7 +302,7 @@ async function leaveRoom(req, res) {
             delete gameData.playersCards[player._id];
             $setObj.playersCards = gameData.playersCards;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                $setObj.currentPlayer = common.getNextPlayer(gameData.players, gameData.currentPlayer);
+                $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.players, gameData.currentPlayer);
             }
         }
         let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -311,7 +312,7 @@ async function leaveRoom(req, res) {
             gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
         });
     } catch (err) {
-        common.serverError(req, res, err);
+        CommonUtil.serverError(req, res, err);
     }
 }
 

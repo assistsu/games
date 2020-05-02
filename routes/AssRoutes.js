@@ -42,8 +42,7 @@ app.post('/:id/submit-card',
     AssMiddleware.playerShouldPresentInGame,
     GameMiddleware.gameStatusShouldBeStarted,
     GameMiddleware.isMyMove,
-    AssMiddleware.isChosenCardValid,
-    AssMiddleware.isChosenCardPresentInPlayerDeck,
+    GameMiddleware.isChosenCardValid,
     AssController.submitCard
 );
 

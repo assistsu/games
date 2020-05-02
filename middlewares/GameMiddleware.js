@@ -27,6 +27,20 @@ function playerShouldNotPresentInGame(req, res, next) {
     next();
 }
 
+function isChosenCardValid(req, res, next) {
+    const chosenCard = _.pick(req.body.chosenCard, ['type', 'number']);
+    if (typeof chosenCard != "object") {
+        return res.status(400).json({ message: 'Chosencard is invalid', errCode: 'INVALID_CARD' });
+    }
+    const { gameData, player } = req;
+    const cardIndex = _.findIndex(gameData.playersCards[player._id], { type: chosenCard.type, number: chosenCard.number });
+    if (cardIndex == -1) {
+        return res.status(400).json({ message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' });
+    }
+    _.assign(req, { chosenCard, cardIndex });
+    next();
+}
+
 function isMyMove(req, res, next) {
     if (req.gameData.currentPlayer._id != req.player._id) {
         return res.status(401).json({ message: 'This is not your move', errCode: 'NOT_YOUR_MOVE' });
@@ -66,6 +80,7 @@ module.exports = {
     isValidRoomID,
     playerShouldPresentInGame,
     playerShouldNotPresentInGame,
+    isChosenCardValid,
     isMyMove,
     isAdmin,
     gameStatusShouldBeCreated,

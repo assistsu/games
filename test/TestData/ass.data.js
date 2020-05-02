@@ -27,8 +27,8 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
-                    { type: 'HEART', number: 2 },
-                    { type: 'SPADE', number: 14 }
+                    { type: 'HEART', number: '2' },
+                    { type: 'SPADE', number: 'A' }
                 ]
             },
             currentRoundPlayerCards: {},
@@ -42,11 +42,11 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }, { _id: 'xyz' }],
             playersCards: {
                 abc: [
-                    { type: 'HEART', number: 2 },
-                    { type: 'SPADE', number: 14 }
+                    { type: 'HEART', number: '2' },
+                    { type: 'SPADE', number: 'A' }
                 ],
             },
-            currentRoundPlayerCards: { 123: { type: 'HEART', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'HEART', number: '3', point: 3 } },
             assPlayers: {},
         }
     },
@@ -57,12 +57,12 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
-                    { type: 'HEART', number: 2 },
-                    { type: 'SPADE', number: 14 }
+                    { type: 'HEART', number: '2' },
+                    { type: 'SPADE', number: 'A' }
                 ],
-                123: [{ type: 'HEART', number: 3 },]
+                123: [{ type: 'HEART', number: '3' },]
             },
-            currentRoundPlayerCards: { 123: { type: 'HEART', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'HEART', number: '3', point: 3 } },
             assPlayers: {},
         }
     },
@@ -73,11 +73,11 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 abc: [
-                    { type: 'HEART', number: 2 },
+                    { type: 'HEART', number: '2' },
                 ],
-                123: [{ type: 'HEART', number: 4 },]
+                123: [{ type: 'HEART', number: '4' },]
             },
-            currentRoundPlayerCards: { 123: { type: 'HEART', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'HEART', number: '3', point: 3 } },
             assPlayers: {},
         }
     },
@@ -88,9 +88,9 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 123: [],
-                abc: [{ type: 'HEART', number: 2 }, { type: 'SPADE', number: 14 }],
+                abc: [{ type: 'HEART', number: '2' }, { type: 'SPADE', number: 'A' }],
             },
-            currentRoundPlayerCards: { 123: { type: 'CLUB', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'CLUB', number: '3', point: 3 } },
             assPlayers: {},
         }
     },
@@ -101,9 +101,9 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 123: [],
-                abc: [{ type: 'HEART', number: 2 }],
+                abc: [{ type: 'HEART', number: '2' }],
             },
-            currentRoundPlayerCards: { 123: { type: 'HEART', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'HEART', number: '3', point: 3 } },
             assPlayers: {},
         }
     },
@@ -114,9 +114,9 @@ module.exports = Object.freeze({
             playersInGame: [{ _id: '123' }, { _id: 'abc' }],
             playersCards: {
                 123: [],
-                abc: [{ type: 'HEART', number: 2 }],
+                abc: [{ type: 'HEART', number: '2' }],
             },
-            currentRoundPlayerCards: { 123: { type: 'HEART', number: 3 } },
+            currentRoundPlayerCards: { 123: { type: 'HEART', number: '3', point: 3 } },
             assPlayers: { abc: 1 },
         }
     },

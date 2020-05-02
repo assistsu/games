@@ -60,27 +60,27 @@ describe('Ass apis tests', function () {
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCard: { type: 'spade' } })
-                .expect(400, responses.INVALID_CARD);
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and with card number < 2', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { number: 1 } })
-                .expect(400, responses.INVALID_CARD);
+                .send({ chosenCard: { number: '1' } })
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and with card number > 14', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { number: 15 } })
-                .expect(400, responses.INVALID_CARD);
+                .send({ chosenCard: { number: '15' } })
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and passing not my card', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'SPADE', number: 5 } })
+                .send({ chosenCard: { type: 'SPADE', number: '5' } })
                 .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and with valid card and first card', () => {
@@ -88,7 +88,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('my move and with valid card and second card', () => {
@@ -96,7 +96,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('my move and with valid card and last card', () => {
@@ -104,7 +104,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('my move and with valid card and game end', () => {
@@ -112,14 +112,14 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('my move and with valid card and spoofing', () => {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGameRoundsLastCardData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'SPADE', number: 14 } })
+                .send({ chosenCard: { type: 'SPADE', number: 'A' } })
                 .expect(400, responses.PLAYER_SPOOFING);
         });
         it('my move and with valid card and hitting', () => {
@@ -127,7 +127,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'SPADE', number: 14 } })
+                .send({ chosenCard: { type: 'SPADE', number: 'A' } })
                 .expect(200);
         });
         it('my move and my last card', () => {
@@ -135,7 +135,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('my move and my last card and ass in last match', () => {
@@ -143,7 +143,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'updateById').resolves(null);
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(200);
         });
         it('without stubbing findById', () => {
@@ -153,7 +153,7 @@ describe('Ass apis tests', function () {
             sinon.stub(mongodb, 'findById').resolves(AssData.getStartedGamePlayerLastCardAssInLastGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
-                .send({ chosenCard: { type: 'HEART', number: 2 } })
+                .send({ chosenCard: { type: 'HEART', number: '2' } })
                 .expect(500);
         });
     });

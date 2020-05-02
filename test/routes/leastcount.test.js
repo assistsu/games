@@ -60,21 +60,21 @@ describe('Least count apis tests', function () {
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCards: [{ type: 'spade' }] })
-                .expect(400, responses.INVALID_CARD);
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and with invalid card number < 2', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCards: [{ number: 1 }] })
-                .expect(400, responses.INVALID_CARD);
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and with invalid card number > 14', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCards: [{ number: 15 }] })
-                .expect(400, responses.INVALID_CARD);
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move and passing not my card', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
@@ -97,7 +97,7 @@ describe('Least count apis tests', function () {
             return app.post(basepath + '/123456789012/submit-card')
                 .set('x-player-token', jwt.sign({ _id: 'abc' }))
                 .send({ chosenCards: [{ type: 'SPADE', number: 13 }, { type: 'SPADE', number: 0 }] })
-                .expect(400, responses.INVALID_CARD);
+                .expect(400, responses.CHOSEN_CARD_NOT_PRESENT);
         });
         it('my move with my cards > 1 and not same number cards', () => {
             sinon.stub(mongodb, 'findById').resolves(LeastCountData.getStartedSubmitActionGameData());
