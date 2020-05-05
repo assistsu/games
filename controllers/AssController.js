@@ -39,6 +39,7 @@ function getCreataRoomInsertObj(roomName, player) {
         status: 'CREATED',
         players: [player],
         playersInGame: [player],
+        allJoinedPlayers: [player],
         actions: [],
         messages: [],
         admin: player,
@@ -67,7 +68,7 @@ async function joinRoom(req, res) {
         let { player } = req;
         let $setObj = { updatedAt: new Date(), updatedBy: player };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, {
-            $push: { players: player, playersInGame: player },
+            $push: { players: player, playersInGame: player, allJoinedPlayers: player },
             $set: $setObj
         });
         res.sendStatus(200);
@@ -95,7 +96,7 @@ async function submitCard(req, res) {
             $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
         } else if (isSameType && isLastCard) {
             gameData.currentRoundPlayerCards[player._id] = chosenCard;
-            $pushObj.rounds = { type: 'ALL_SUBMITTED', playerCards: gameData.currentRoundPlayerCards };
+            $pushObj.rounds = { type: 'ALL_SUBMITTED', playersCards: gameData.currentRoundPlayerCards };
             $setObj.currentRoundPlayerCards = {};
             $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: AssUtil.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) });
         }
@@ -133,7 +134,7 @@ async function submitCard(req, res) {
                 }
             }
         }
-        if (gameData.playersInGame.length == 1) {
+        if (gameData.playersInGame.length <= 1) {
             $setObj.status = 'ENDED';
             if (gameData.assPlayers[gameData.playersInGame[0]] == null)
                 gameData.assPlayers[gameData.playersInGame[0]] = 0;
@@ -180,6 +181,7 @@ async function startGame(req, res) {
             currentPlayer,
             updatedAt: new Date(), updatedBy: player
         };
+        // $setObj.currentPlayer = players[0];
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         preProcessGameData($setObj, { players: gameData.players, playersInGame: gameData.playersInGame });
         $setObj.myCards = playersCards[player._id];
