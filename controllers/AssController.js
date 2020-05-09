@@ -2,6 +2,7 @@ const shuffle = require('shuffle-array');
 const _ = require('lodash');
 const AssUtil = require('../utils/AssUtil');
 const CommonUtil = require('../utils/CommonUtil');
+const ResponseUtil = require('../utils/ResponseUtil');
 const mongodb = require('../model/mongodb');
 const CommonModel = require('../model/Common');
 
@@ -29,7 +30,7 @@ function getGameStatus(req, res) {
         gameData.myCards = myCards;
         res.json(gameData);
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -59,7 +60,7 @@ async function createRoom(req, res) {
         const gameData = await mongodb.insertOne(collectionName, insertObj);
         res.json({ _id: gameData.ops[0]._id });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -74,7 +75,31 @@ async function joinRoom(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...$setObj } });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
+    }
+}
+
+function removeDonePlayers(gameData, $setObj) {
+    let isAnyAssPlayerDone = false;
+    const donePlayers = gameData.playersInGame.filter(o => $setObj.playersCards[o._id].length == 0);
+    donePlayers.map(o => {
+        delete $setObj.playersCards[o._id];
+        delete gameData.currentRoundPlayerCards[o._id];
+        if (o._id) recomputeCP = true;
+        gameData.playersInGame.splice(_.findIndex(gameData.playersInGame, { _id: o._id }), 1);
+        if (gameData.assPlayers[o._id]) {
+            isAnyAssPlayerDone = true;
+            gameData.assPlayers[o._id]--;
+            if (gameData.assPlayers[o._id] == 0) {
+                delete gameData.assPlayers[o._id];
+            }
+        }
+    });
+    if (donePlayers.length) {
+        $setObj.playersInGame = gameData.playersInGame;
+        if (isAnyAssPlayerDone) {
+            $setObj.assPlayers = gameData.assPlayers;
+        }
     }
 }
 
@@ -96,44 +121,31 @@ async function submitCard(req, res) {
             $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
         } else if (isSameType && isLastCard) {
             gameData.currentRoundPlayerCards[player._id] = chosenCard;
-            $pushObj.rounds = { type: 'ALL_SUBMITTED', playersCards: gameData.currentRoundPlayerCards };
+            $pushObj.rounds = {
+                type: 'ALL_SUBMITTED',
+                playersCards: _.assign({}, gameData.currentRoundPlayerCards)
+            };
             $setObj.currentRoundPlayerCards = {};
-            $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: AssUtil.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) });
+            removeDonePlayers(gameData, $setObj);
+            $setObj.currentPlayer = AssUtil.getCurrentPlayer(gameData);
         }
         else {
             const isPlayerSpoofing = _.findIndex(gameData.playersCards[player._id], { type: currentRoundCards[0].type }) != -1;
             if (isPlayerSpoofing) return res.status(400).json({ message: 'Spoofing not allowed', errCode: 'PLAYER_SPOOFING' });
-            const playerId = AssUtil.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards);
+            const playerGotHit = AssUtil.getCurrentPlayer(gameData);
             $setObj.currentRoundPlayerCards[player._id] = chosenCard;
-            $pushObj.rounds = { type: 'HIT', playerGotHit: _.find(gameData.playersInGame, { _id: playerId }), hitBy: player, playersCards: gameData.currentRoundPlayerCards };
-            gameData.playersCards[playerId] = gameData.playersCards[playerId].concat(_.values(gameData.currentRoundPlayerCards));
+            $pushObj.rounds = {
+                type: 'HIT',
+                playerGotHit,
+                hitBy: player,
+                playersCards: _.assign({}, gameData.currentRoundPlayerCards)
+            };
+            gameData.playersCards[playerGotHit._id] = gameData.playersCards[playerGotHit._id].concat(_.values(gameData.currentRoundPlayerCards));
             $setObj.currentRoundPlayerCards = {};
-            $setObj.currentPlayer = _.find(gameData.playersInGame, { _id: playerId });
+            removeDonePlayers(gameData, $setObj);
+            $setObj.currentPlayer = playerGotHit;
         }
         $setObj.playersCards[player._id].splice(cardIndex, 1);
-        if ($pushObj.rounds != null) {
-            let isAnyAssPlayerDone = false;
-            const donePlayers = gameData.playersInGame.filter(o => $setObj.playersCards[o._id].length == 0);
-            donePlayers.map(o => {
-                if ($setObj.playersCards[o._id].length) return;
-                isAnyAssPlayerDone = true;
-                delete $setObj.playersCards[o._id];
-                gameData.playersInGame.splice(_.findIndex(gameData.playersInGame, { _id: o._id }), 1);
-                if (gameData.assPlayers[o._id]) {
-                    isAnyAssPlayerDone = true;
-                    gameData.assPlayers[o._id]--;
-                    if (gameData.assPlayers[o._id] == 0) {
-                        delete gameData.assPlayers[o._id];
-                    }
-                }
-            });
-            if (donePlayers.length) {
-                $setObj.playersInGame = gameData.playersInGame;
-                if (isAnyAssPlayerDone) {
-                    $setObj.assPlayers = gameData.assPlayers;
-                }
-            }
-        }
         if (gameData.playersInGame.length <= 1) {
             $setObj.status = 'ENDED';
             if (gameData.assPlayers[gameData.playersInGame[0]] == null)
@@ -154,7 +166,7 @@ async function submitCard(req, res) {
         $setObj.myCards = gameData.playersCards[player._id] || [];
         res.json($setObj);
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -188,7 +200,7 @@ async function startGame(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -201,7 +213,7 @@ async function restart(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -210,7 +222,12 @@ async function leaveRoom(req, res) {
         let { gameData, player, playerIndex } = req;
         gameData.playersInGame.splice(playerIndex, 1);
         gameData.players.splice(_.findIndex(gameData.players, { _id: player._id }), 1);
-        let $setObj = { assPlayers: {}, players: gameData.players, playersInGame: gameData.playersInGame, updatedAt: new Date(), updatedBy: player };
+        let $setObj = {
+            assPlayers: {},
+            players: gameData.players,
+            playersInGame: gameData.playersInGame,
+            updatedAt: new Date(), updatedBy: player
+        };
         if (gameData.players.length && gameData.admin._id == player._id) {
             $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
         }
@@ -219,7 +236,8 @@ async function leaveRoom(req, res) {
                 $setObj.status = 'ENDED';
             }
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.players, gameData.currentPlayer);
+                delete gameData.currentRoundPlayerCards[player._id];
+                $setObj.currentPlayer = AssUtil.getCurrentPlayer(gameData);
             }
         }
         let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -229,7 +247,7 @@ async function leaveRoom(req, res) {
             gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
         });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -242,7 +260,7 @@ async function newMessage(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -263,7 +281,7 @@ async function nudgePlayer(req, res) {
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 

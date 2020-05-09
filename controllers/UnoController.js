@@ -1,11 +1,12 @@
 const shuffle = require('shuffle-array');
 const _ = require('lodash');
-const Uno = require('../utils/uno');
+const UnoUtil = require('../utils/UnoUtil');
 const CommonUtil = require('../utils/CommonUtil');
+const ResponseUtil = require('../utils/ResponseUtil');
 const mongodb = require('../model/mongodb');
 const CommonModel = require('../model/Common');
 
-const cards = Uno.getCards();
+const cards = UnoUtil.getCards();
 const collectionName = "uno";
 
 function removePrivateFields(gameData, moreFields = []) {
@@ -28,7 +29,7 @@ function getGameStatus(req, res) {
         gameData.myCards = myCards;
         res.json(gameData);
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -37,6 +38,7 @@ function getCreataRoomInsertObj(roomName, player) {
         roomName: roomName,
         status: 'CREATED',
         players: [player],
+        allJoinedPlayers: [player],
         actions: [],
         messages: [],
         admin: player,
@@ -54,7 +56,7 @@ async function createRoom(req, res) {
         const gameData = await mongodb.insertOne(collectionName, insertObj);
         res.json({ _id: gameData.ops[0]._id });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -66,13 +68,13 @@ async function joinRoom(req, res) {
         }
         let $setObj = { updatedAt: new Date(), updatedBy: player };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, {
-            $push: { players: player },
+            $push: { players: player, allJoinedPlayers: player },
             $set: $setObj
         });
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_PLAYER_JOINED', gameData: { player: player, ...$setObj } });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -85,19 +87,19 @@ async function submitCard(req, res) {
             return res.status(400).json({ message: 'Chosen card not present in your deck', errCode: 'CHOSEN_CARD_NOT_PRESENT' });
         }
         let { lastCard, inc } = gameData;
-        if (!Uno.isActionValid(lastCard, chosenCard)) {
+        if (!UnoUtil.isActionValid(lastCard, chosenCard)) {
             return res.status(400).json({ message: 'Chosen card does not match with last card', errCode: 'CHOSEN_CARD_NOT_MATCHED' });
         }
-        if (chosenCard.type == Uno.card_types.REVERSE_CARD) {
+        if (chosenCard.type == UnoUtil.card_types.REVERSE_CARD) {
             inc = -inc;
         }
         let nextPlayer = CommonUtil.getNextPlayer(gameData.players, gameData.currentPlayer, inc);
         switch (chosenCard.type) {
-            case Uno.card_types.WILD_CARD_DRAW_FOUR_CARDS:
+            case UnoUtil.card_types.WILD_CARD_DRAW_FOUR_CARDS:
                 gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
-            case Uno.card_types.DRAW_TWO_CARDS:
+            case UnoUtil.card_types.DRAW_TWO_CARDS:
                 gameData.playersCards[nextPlayer._id] = gameData.playersCards[nextPlayer._id].concat(gameData.deck.splice(0, 2));
-            case Uno.card_types.SKIP_CARD:
+            case UnoUtil.card_types.SKIP_CARD:
                 nextPlayer = CommonUtil.getNextPlayer(gameData.players, nextPlayer, inc);
                 break;
         }
@@ -124,7 +126,7 @@ async function submitCard(req, res) {
         $setObj.myCards = gameData.playersCards[player._id] || [];
         res.json($setObj);
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -142,7 +144,7 @@ async function passCard(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'PLAYER_PASSED', gameData: $setObj });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -165,7 +167,7 @@ async function takeCard(req, res) {
         $setObj.myCards = gameData.playersCards[player._id] || [];
         res.json($setObj);
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -206,7 +208,7 @@ async function startGame(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedAt', 'updatedBy']) });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -219,7 +221,7 @@ async function restart(req, res) {
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_RESTARTED', gameData: $setObj });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -250,7 +252,7 @@ async function leaveRoom(req, res) {
             gameData: { leftPlayerIndex: playerIndex, ..._.pick($setObj, ['updatedBy', 'updatedAt']) }
         });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -263,7 +265,7 @@ async function newMessage(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -284,7 +286,7 @@ async function nudgePlayer(req, res) {
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 

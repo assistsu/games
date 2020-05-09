@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const CommonUtil = require('../utils/CommonUtil');
+const ResponseUtil = require('../utils/ResponseUtil');
 const mongodb = require('../model/mongodb');
 
 async function newMessage(req, res) {
@@ -11,7 +12,7 @@ async function newMessage(req, res) {
         res.sendStatus(200);
         io.emit(req.params.id, { event: 'NEW_MESSAGE', gameData: { message: message } });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 
@@ -32,7 +33,7 @@ async function nudgePlayer(req, res) {
         res.sendStatus(200);
         io.emit(playerId, { event: 'NUDGED', nudgedBy: req.player });
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 

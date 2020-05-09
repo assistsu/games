@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const mongodb = require('../model/mongodb');
-const CommonUtil = require('../utils/CommonUtil');
-const LeastCountUtil = require('../utils/LeastCountUtil');
+const ResponseUtil = require('../utils/ResponseUtil');
 
 async function isRoomExist(req, res, next) {
     try {
@@ -11,7 +10,7 @@ async function isRoomExist(req, res, next) {
         }
         next();
     } catch (err) {
-        CommonUtil.serverError(req, res, err);
+        ResponseUtil.serverError(req, res, err);
     }
 }
 

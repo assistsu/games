@@ -5,6 +5,7 @@ const PlayerRoutes = require('./PlayerRoutes');
 const UnoRoutes = require('./UnoRoutes');
 const AssRoutes = require('./AssRoutes');
 const LeastCountRoutes = require('./LeastCountRoutes');
+const LudoRoutes = require('./LudoRoutes');
 
 const PlayerMiddleware = require('../middlewares/PlayerMiddleware');
 
@@ -13,9 +14,11 @@ app.use('/player', PlayerRoutes);
 
 /** UNO Game APIs */
 app.use('/game/uno', PlayerMiddleware.validatePlayer, UnoRoutes);
+/** Ass Game APIs */
 app.use('/game/ass', PlayerMiddleware.validatePlayer, AssRoutes);
+/** Least Count Game APIs */
 app.use('/game/leastcount', PlayerMiddleware.validatePlayer, LeastCountRoutes);
-
-app.all('*', (req, res) => { res.sendStatus(404) });
+/** Ludo Game APIs */
+app.use('/game/ludo', PlayerMiddleware.validatePlayer, LudoRoutes);
 
 module.exports = app;

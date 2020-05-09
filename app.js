@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-io=require('socket.io')(http);
+io = require('socket.io')(http);
 
 const bodyParser = require('body-parser');
 
@@ -20,12 +20,20 @@ if (process.env.NODE_ENV == 'prod') {
         next();
     });
 }
-
-app.use('/logs', express.static('./logs'));
 app.use('/assets', express.static('./games/assets'));
 
-app.get('*', function (req, res) {
+app.get('/logs', express.static('./logs'));
+
+app.get([
+    '/',
+    '/game/uno/*',
+    '/game/ass/*',
+    '/game/leastcount/*',
+    '/game/ludo/*',
+], function (req, res) {
     res.sendFile(__dirname + '/games/index.html');
 });
+
+app.all('*', (req, res) => { res.sendStatus(404) });
 
 module.exports = http;

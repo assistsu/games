@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 function pointMapper(number) {
     switch (number) {
         case 'J': return 11;
@@ -19,7 +21,11 @@ function getPlayerWhoPutMaxCard(playersCard) {
     return playerId;
 }
 
+function getCurrentPlayer(gameData) {
+    return _.find(gameData.playersInGame, { _id: getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) })
+}
+
 module.exports = {
     pointMapper,
-    getPlayerWhoPutMaxCard,
+    getCurrentPlayer,
 }
