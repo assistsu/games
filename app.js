@@ -22,7 +22,7 @@ app.use('/api/v1', routes);
 // }
 app.use('/assets', express.static('./games/assets'));
 
-app.get('/logs', express.static('./logs'));
+app.use('/logs', express.static('./logs'));
 
 app.get([
     '/',
