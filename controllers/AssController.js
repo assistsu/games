@@ -220,7 +220,6 @@ async function restart(req, res) {
 async function leaveRoom(req, res) {
     try {
         let { gameData, player, playerIndex } = req;
-        gameData.playersInGame.splice(playerIndex, 1);
         gameData.players.splice(_.findIndex(gameData.players, { _id: player._id }), 1);
         let $setObj = {
             assPlayers: {},
@@ -232,14 +231,31 @@ async function leaveRoom(req, res) {
             $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
-            if (gameData.players.length == 1) {
+            if (gameData.playersInGame.length > 1) {
+                if (gameData.currentPlayer._id == player._id) {
+                    if (_.keys(gameData.currentRoundPlayerCards).length == 0) {
+                        const lastRound = _.nth(gameData.rounds, -1);
+                        if (lastRound) {
+                            if (lastRound.type == 'HIT') {
+                                delete lastRound.playersCards[lastRound.hitBy._id];
+                            }
+                            gameData.currentRoundPlayerCards = _.pick(lastRound.playersCards, gameData.playersInGame.map(o => o._id));
+                            $setObj.currentPlayer = AssUtil.getCurrentPlayer(gameData);
+                        } else {
+                            $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
+                        }
+                    } else {
+                        delete gameData.currentRoundPlayerCards[player._id];
+                        $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
+                    }
+                } else {
+                    delete gameData.currentRoundPlayerCards[player._id];
+                }
+            } else {
                 $setObj.status = 'ENDED';
             }
-            if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {
-                delete gameData.currentRoundPlayerCards[player._id];
-                $setObj.currentPlayer = AssUtil.getCurrentPlayer(gameData);
-            }
         }
+        gameData.playersInGame.splice(playerIndex, 1);
         let updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
         res.sendStatus(200);
         io.emit(req.params.id, {
