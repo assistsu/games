@@ -231,7 +231,7 @@ async function leaveRoom(req, res) {
             $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
-            if (gameData.playersInGame.length > 1) {
+            if (gameData.playersInGame.length > 2) {
                 if (gameData.currentPlayer._id == player._id) {
                     if (_.keys(gameData.currentRoundPlayerCards).length == 0) {
                         const lastRound = _.nth(gameData.rounds, -1);
@@ -239,7 +239,7 @@ async function leaveRoom(req, res) {
                             if (lastRound.type == 'HIT') {
                                 delete lastRound.playersCards[lastRound.hitBy._id];
                             }
-                            gameData.currentRoundPlayerCards = _.pick(lastRound.playersCards, gameData.playersInGame.map(o => o._id));
+                            gameData.currentRoundPlayerCards = _.pick(lastRound.playersCards, gameData.playersInGame.map(o => o._id == player._id ? '' : o._id));
                             $setObj.currentPlayer = AssUtil.getCurrentPlayer(gameData);
                         } else {
                             $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
