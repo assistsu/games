@@ -80,25 +80,14 @@ async function joinRoom(req, res) {
 }
 
 function removeDonePlayers(gameData, $setObj) {
-    let isAnyAssPlayerDone = false;
     const donePlayers = _.filter(gameData.playersInGame, o => $setObj.playersCards[o._id].length == 0);
     donePlayers.map(o => {
         delete $setObj.playersCards[o._id];
         delete gameData.currentRoundPlayerCards[o._id];
         _.remove(gameData.playersInGame, { _id: o._id });
-        if (gameData.assPlayers[o._id]) {
-            isAnyAssPlayerDone = true;
-            gameData.assPlayers[o._id]--;
-            if (gameData.assPlayers[o._id] == 0) {
-                delete gameData.assPlayers[o._id];
-            }
-        }
     });
     if (donePlayers.length) {
         $setObj.playersInGame = gameData.playersInGame;
-        if (isAnyAssPlayerDone) {
-            $setObj.assPlayers = gameData.assPlayers;
-        }
     }
     return donePlayers;
 }
@@ -116,6 +105,7 @@ async function submitCard(req, res) {
         const currentRoundCards = _.values(gameData.currentRoundPlayerCards);
         const isSameType = currentRoundCards.length && currentRoundCards[0].type == chosenCard.type;
         const isLastCard = currentRoundCards.length == gameData.playersInGame.length - 1;
+        $setObj.playersCards[player._id].splice(cardIndex, 1);
         if (currentRoundCards.length == 0 || (isSameType && !isLastCard)) {
             $setObj.currentRoundPlayerCards[player._id] = chosenCard;
             $setObj.currentPlayer = CommonUtil.getNextPlayer(gameData.playersInGame, player, 1);
@@ -145,7 +135,6 @@ async function submitCard(req, res) {
             $setObj.currentRoundPlayerCards = {};
             $setObj.currentPlayer = playerGotHit;
         }
-        $setObj.playersCards[player._id].splice(cardIndex, 1);
         if (gameData.playersInGame.length <= 1) {
             $setObj.status = 'ENDED';
             if (gameData.assPlayers[gameData.playersInGame[0]] == null)
