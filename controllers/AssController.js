@@ -178,13 +178,14 @@ async function startGame(req, res) {
         }
         const $setObj = {
             status: 'STARTED', currentRoundPlayerCards: {}, playersCards, rounds: [], startedBy: player,
+            playersInGame: shuffle(gameData.playersInGame, { copy: true }),
             escapedPlayers: [],
             currentPlayer,
             updatedAt: new Date(), updatedBy: player
         };
         // $setObj.currentPlayer = players[0];
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
-        preProcessGameData($setObj, { players: gameData.players, playersInGame: gameData.playersInGame });
+        preProcessGameData($setObj, { players: gameData.players, playersInGame: $setObj.playersInGame });
         $setObj.myCards = playersCards[player._id];
         res.json($setObj);
         io.emit(req.params.id, { event: 'GAME_STARTED', gameData: _.pick($setObj, ['updatedAt', 'updatedBy']) });
