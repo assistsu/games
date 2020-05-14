@@ -178,7 +178,8 @@ async function startGame(req, res) {
         }
         const $setObj = {
             status: 'STARTED', currentRoundPlayerCards: {}, playersCards, rounds: [], startedBy: player,
-            playersInGame: shuffle(gameData.playersInGame, { copy: true }),
+            playersInGame: players,
+            players,
             escapedPlayers: [],
             currentPlayer,
             updatedAt: new Date(), updatedBy: player
