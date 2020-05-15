@@ -187,14 +187,14 @@ async function startGame(req, res) {
             playersCards[playerId] = [];
             playersPoints[playerId] = 0;
             for (let j = 0; j < 7; j++) {
-                const ind = CommonUtil.randomNumber(0, deck.length);
+                const ind = _.random(0, deck.length);
                 const card = deck[ind];
                 playersCards[playerId].push(card);
                 playersPoints[playerId] += card.point;
                 deck.splice(ind, 1);
             }
         }
-        const ind = CommonUtil.randomNumber(0, deck.length);
+        const ind = _.random(0, deck.length);
         const lastCard = deck[ind];
         deck.splice(ind, 1);
         const $setObj = {
@@ -205,7 +205,7 @@ async function startGame(req, res) {
             playersPoints,
             deck,
             startedBy: player,
-            currentPlayer: players[CommonUtil.randomNumber(0, players.length - 1)],
+            currentPlayer: players[_.random(0, players.length - 1)],
             currentPlayerAction: 'DECIDE',
             updatedAt: new Date(), updatedBy: player
         };
@@ -294,7 +294,7 @@ async function leaveRoom(req, res) {
             updatedAt: new Date(), updatedBy: player
         };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[_.random(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {

@@ -164,11 +164,11 @@ async function startGame(req, res) {
         let { gameData, player } = req;
         const deck = shuffle(cards, { 'copy': true });
         let playersCards = {}, players = shuffle(gameData.players, { 'copy': true });
-        let _currentPlayer = players[CommonUtil.randomNumber(0, players.length - 1)];
+        let _currentPlayer = players[_.random(0, players.length - 1)];
         let currentPlayer;
         for (let i = 0; i < 52; i++) {
             if (playersCards[_currentPlayer._id] == null) { playersCards[_currentPlayer._id] = [] }
-            const ind = CommonUtil.randomNumber(0, deck.length - 1);
+            const ind = _.random(0, deck.length - 1);
             playersCards[_currentPlayer._id].push(deck[ind]);
             if (deck[ind].type == 'SPADE' && deck[ind].number == 'A') {
                 currentPlayer = _currentPlayer;
@@ -219,7 +219,7 @@ async function leaveRoom(req, res) {
             updatedAt: new Date(), updatedBy: player
         };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[_.random(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.playersInGame.length > 2) {

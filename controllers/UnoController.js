@@ -103,7 +103,7 @@ async function submitCard(req, res) {
                 nextPlayer = CommonUtil.getNextPlayer(gameData.players, nextPlayer, inc);
                 break;
         }
-        gameData.deck.splice(CommonUtil.randomNumber(0, gameData.deck.length - 1), 0, lastCard);
+        gameData.deck.splice(_.random(0, gameData.deck.length - 1), 0, lastCard);
         gameData.playersCards[player._id].splice(cardIndex, 1);
         let $setObj = {
             lastLastCard: gameData.lastCard, lastCard: chosenCard, playersCards: gameData.playersCards, inc: inc,
@@ -180,7 +180,7 @@ async function startGame(req, res) {
         const deck = shuffle(cards, { 'copy': true });
         let lastCard = null;
         while (!lastCard) {
-            const num = CommonUtil.randomNumber(0, deck.length);
+            const num = _.random(0, deck.length);
             const card = deck[num];
             if (card.type.match(/[0-9]/) == null) continue;
             lastCard = card;
@@ -191,7 +191,7 @@ async function startGame(req, res) {
             const playerId = players[i]._id;
             playersCards[playerId] = [];
             for (let j = 0; j < 7; j++) {
-                const num = CommonUtil.randomNumber(0, deck.length);
+                const num = _.random(0, deck.length);
                 const card = deck[num];
                 playersCards[playerId].push(card);
                 deck.splice(num, 1);
@@ -199,7 +199,7 @@ async function startGame(req, res) {
         }
         const $setObj = {
             players, status: 'STARTED', lastCard, playersCards, deck, startedBy: player,
-            currentPlayer: players[CommonUtil.randomNumber(0, players.length - 1)], inc: 1,
+            currentPlayer: players[_.random(0, players.length - 1)], inc: 1,
             updatedAt: new Date(), updatedBy: player
         };
         const updatedGameData = await mongodb.updateById(collectionName, req.roomObjectId, { $set: $setObj });
@@ -231,14 +231,14 @@ async function leaveRoom(req, res) {
         gameData.players.splice(playerIndex, 1);
         let $setObj = { players: gameData.players, updatedAt: new Date(), updatedBy: player };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[_.random(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {
                 $setObj.status = 'ENDED';
             }
             gameData.playersCards[player._id].forEach(card => {
-                gameData.deck.splice(CommonUtil.randomNumber(0, gameData.deck.length - 1), 0, card);
+                gameData.deck.splice(_.random(0, gameData.deck.length - 1), 0, card);
             });
             $setObj.deck = gameData.deck;
             if (gameData.players.length > 1 && gameData.currentPlayer._id == player._id) {

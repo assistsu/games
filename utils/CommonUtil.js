@@ -1,19 +1,6 @@
 const _ = require('lodash');
 
-function randomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min) + min);
-}
-
-function serverError(req, res, error) {
-    res.status(500).json({ message: 'Server Error', errCode: 'SERVER_ERROR' });
-    console.error("ERR!", {
-        ..._.pick(req, ['originalUrl', 'method', 'params', 'player', 'playerIndex']),
-        data: JSON.stringify(_.pick(req, ['query', 'body', 'gameData'])),
-        error: error
-    });
-}
-
-function getNextPlayer(players, currentPlayer, inc) {
+function getNextPlayer(players, currentPlayer, inc = 1) {
     const currentPlayerInd = _.findIndex(players, { _id: currentPlayer._id });
     const nextPlayerInd = (currentPlayerInd + inc) % players.length;
     const nextPlayer = players[nextPlayerInd >= 0 ? nextPlayerInd : players.length - 1];
@@ -21,7 +8,6 @@ function getNextPlayer(players, currentPlayer, inc) {
 }
 
 const standardDeckCardTypes = ['SPADE', 'HEART', 'CLUB', 'DIAMOND'];
-const standardDeckNumberTypes = ['A', 'K', 'Q', 'J', ...Array(10).fill().map((o, i) => i.toString())];
 
 function getStandardDeck(pointMapper, includeJoker = false) {
     let cards = [];
@@ -43,8 +29,6 @@ function getStandardDeck(pointMapper, includeJoker = false) {
 }
 
 module.exports = {
-    randomNumber,
-    serverError,
     getNextPlayer,
     standardDeckCardTypes,
     getStandardDeck,

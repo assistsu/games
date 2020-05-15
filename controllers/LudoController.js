@@ -72,7 +72,7 @@ async function startGame(req, res) {
         const $setObj = {
             status: 'STARTED', startedBy: player,
             playerTokens,
-            currentPlayer: gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)],
+            currentPlayer: gameData.players[_.random(0, gameData.players.length - 1)],
             currentPlayerAction: 'ROLL_DICE',
             updatedAt: new Date(), updatedBy: player
         };
@@ -104,7 +104,7 @@ async function leaveRoom(req, res) {
         gameData.players.splice(_.findIndex(gameData.players, { _id: player._id }), 1);
         let $setObj = { assPlayers: {}, players: gameData.players, playersInGame: gameData.playersInGame, updatedAt: new Date(), updatedBy: player };
         if (gameData.players.length && gameData.admin._id == player._id) {
-            $setObj.admin = gameData.players[CommonUtil.randomNumber(0, gameData.players.length - 1)];
+            $setObj.admin = gameData.players[_.random(0, gameData.players.length - 1)];
         }
         if (gameData.status == 'STARTED') {
             if (gameData.players.length == 1) {
@@ -127,7 +127,7 @@ async function leaveRoom(req, res) {
 
 async function rollDice(req, res) {
     try {
-        const currentDiceNumber = CommonUtil.randomNumber(1, 6);
+        const currentDiceNumber = _.random(1, 6);
         const $setObj = {
             currentPlayerAction: 'MOVE_TOKEN',
             currentDiceNumber,
@@ -142,7 +142,7 @@ async function rollDice(req, res) {
 }
 
 async function moveToken(req, res) {
-    const currentDiceNumber = CommonUtil.randomNumber(1, 6);
+    const currentDiceNumber = _.random(1, 6);
         const $setObj = {
             currentPlayerAction: 'ROLL_DICE',
             currentDiceNumber,
