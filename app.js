@@ -29,7 +29,6 @@ app.get([
     '/game/uno/*',
     '/game/ass/*',
     '/game/leastcount/*',
-    '/game/ludo/*',
 ], function (req, res) {
     res.sendFile(__dirname + '/games/index.html');
 });

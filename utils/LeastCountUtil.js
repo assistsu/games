@@ -1,26 +1,35 @@
-function pointMapper(number) {
-    switch (number) {
-        case 'A':
-            return 1;
-        case 'K':
-        case 'Q':
-        case 'J':
-            return 10;
-        default:
-            return parseInt(number);
-    }
-}
+const _ = require('lodash');
 
-function isAnyoneHasMinimumPoints(pointsObj, currentMinimum) {
-    for (let playerId in pointsObj) {
-        if (pointsObj[playerId] < currentMinimum) {
-            return true;
+class LeastCountUtil {
+
+    static pointMapper(number) {
+        switch (number) {
+            case 'A':
+                return 1;
+            case 'K':
+            case 'Q':
+            case 'J':
+                return 10;
+            case 'JOKER':
+                return 0;
+            default:
+                return parseInt(number);
         }
     }
-    return false;
+
+    static getDeck(cards, times) {
+        return _.flatten(_.times(times, _.constant(cards)));
+    }
+
+    static isAnyoneHasMinimumPoints(pointsObj, currentMinimum) {
+        for (let playerId in pointsObj) {
+            if (pointsObj[playerId] < currentMinimum) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
 
-module.exports = {
-    pointMapper,
-    isAnyoneHasMinimumPoints,
-}
+module.exports = LeastCountUtil;

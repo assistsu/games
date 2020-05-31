@@ -3,7 +3,7 @@ const sinon = require('sinon');
 const mongodb = require('../../model/mongodb');
 const PlayerData = require('../TestData/player.data');
 const jwt = require('../../utils/jwt');
-const responses = require('../../utils/responses');
+const { responses } = require('../../utils/ResponseUtil');
 
 const app = request(require('../../app'));
 
@@ -20,7 +20,7 @@ describe('Player apis tests', function () {
             return app.post(basepath + '/new').send({ playerName: 'sangam' }).expect(200, expectedBody);
         });
         it('with no playerName', () => {
-            return app.post(basepath + '/new').expect(400, responses.EMPTY_PLAYER_NAME);
+            return app.post(basepath + '/new').expect(400, responses.INVALID_PLAYER_NAME_TYPE);
         });
         it('with empty playerName', () => {
             return app.post(basepath + '/new').send({ playerName: '' }).expect(400, responses.EMPTY_PLAYER_NAME);

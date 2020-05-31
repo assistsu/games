@@ -1,24 +1,32 @@
 const express = require('express');
 const app = express.Router();
-
-const PlayerRoutes = require('./PlayerRoutes');
-const UnoRoutes = require('./UnoRoutes');
-const AssRoutes = require('./AssRoutes');
-const LeastCountRoutes = require('./LeastCountRoutes');
-const LudoRoutes = require('./LudoRoutes');
+const _ = require('lodash');
 
 const PlayerMiddleware = require('../middlewares/PlayerMiddleware');
+const GameMiddleware = require('../middlewares/GameMiddleware');
+const GameController = require('../controllers/GameController');
+const GameUtil = require('../utils/GameUtil');
 
 /** Player APIs */
-app.use('/player', PlayerRoutes);
+app.use('/player', require('./PlayerRoutes'));
 
-/** UNO Game APIs */
-app.use('/game/uno', PlayerMiddleware.validatePlayer, UnoRoutes);
-/** Ass Game APIs */
-app.use('/game/ass', PlayerMiddleware.validatePlayer, AssRoutes);
-/** Least Count Game APIs */
-app.use('/game/leastcount', PlayerMiddleware.validatePlayer, LeastCountRoutes);
-/** Ludo Game APIs */
-app.use('/game/ludo', PlayerMiddleware.validatePlayer, LudoRoutes);
+/** Common Game APIs */
+app.use('/game', PlayerMiddleware.validatePlayer,
+    GameMiddleware.isValidGameName,
+    require('./GameRoutes')
+);
+
+const gamesMap = {
+    'uno': require('./UnoRoutes'),
+    'ass': require('./AssRoutes'),
+    'leastcount': require('./LeastCountRoutes'),
+};
+_.forEach(gamesMap, (Routes, gameName) => {
+    app.use(`/${gameName}/:id`, PlayerMiddleware.validatePlayer,
+        GameUtil.setGameName(gameName),
+        GameController.fetchGameInfo,
+        Routes
+    );
+});
 
 module.exports = app;

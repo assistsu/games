@@ -5,9 +5,10 @@
   "main": "server.js",
   "scripts": {
     "test": "mocha --recursive",
-    "test-uno-api": "mocha test/routes/uno.test.js",
-    "test-ass-api": "mocha test/routes/ass.test.js",
-    "test-leastcount-api": "mocha test/routes/leastcount.test.js",
+    "test-common-game-api": "mocha test/routes/GameRoutes.test.js",
+    "test-uno-api": "mocha test/routes/UnoRoutes.test.js",
+    "test-ass-api": "mocha test/routes/AssRoutes.test.js",
+    "test-leastcount-api": "mocha test/routes/LeastCountRoutes.test.js",
     "test-with-coverage": "nyc npm test",
     "start": "node server.js",
     "serve": "NODE_ENV='prod' npm start"
@@ -20,6 +21,7 @@
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.15",
+    "log4js": "^6.2.1",
     "mongodb": "^3.5.5",
     "morgan": "^1.10.0",
     "shuffle-array": "^1.0.1",
