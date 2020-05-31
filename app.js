@@ -26,9 +26,7 @@ app.use('/logs', express.static('./logs'));
 
 app.get([
     '/',
-    '/game/uno/*',
-    '/game/ass/*',
-    '/game/leastcount/*',
+    '/game/*',
 ], function (req, res) {
     res.sendFile(__dirname + '/games/index.html');
 });

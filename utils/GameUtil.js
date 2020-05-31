@@ -25,6 +25,7 @@ class GameUtil {
         'createdAt',
         'updatedBy',
         'updatedAt',
+        'messages',
     ];
 
     static gameFields = {

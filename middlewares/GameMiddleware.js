@@ -129,7 +129,7 @@ class GameMiddleware {
         if (_.isEmpty(text)) {
             return res.status(400).json(responses.EMPTY_MESSAGE);
         }
-        if (text.trim().length > 15) {
+        if (text.trim().length > 200) {
             return res.status(400).json(responses.MESSAGE_LENGTH_EXCEED);
         }
         req.body.text = text;

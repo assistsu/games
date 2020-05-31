@@ -123,9 +123,10 @@ class GameController {
             let { player } = req;
             const message = { text: text, ...player, createdAt: new Date() };
             const updatedGameData = await mongodb.updateById(req.gameName, req.roomObjectId, { $push: { messages: message } });
-            res.sendStatus(200);
-            req.gameData.players.forEach(player => {
-                io.emit(player._id, { event: 'NEW_MESSAGE', message: message });
+            res.json(message);
+            req.gameData.players.forEach(o => {
+                if (o._id == player._id) return;
+                io.emit(o._id, { event: 'NEW_MESSAGE', message: message });
             });
         } catch (err) {
             serverError(req, res, err);
