@@ -37,7 +37,7 @@ class GameUtil {
     static setMyCards(gameData, player, fields) {
         if (gameData.playersCards) {
             fields.myCards = gameData.playersCards[player._id] || [];
-            fields.players = fields.players.map(o => _.assign({ cardsCount: (gameData.playersCards[player._id] || []).length }, o));
+            fields.players = fields.players.map(o => _.assign({ cardsCount: (gameData.playersCards[o._id] || []).length }, o));
         }
     }
 

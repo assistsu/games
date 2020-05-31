@@ -12,26 +12,23 @@ class AssUtil {
         }
     }
 
-    static getPlayerWhoPutMaxCard(playersCard) {
-        let max = -1, playerId = null;
-        for (let id in playersCard) {
-            if (playersCard[id].point > max) {
-                max = playersCard[id].point;
-                playerId = id;
+    static getCurrentPlayer(gameData) {
+        let max = -1, player = null;
+        for (let i = 0; i < gameData.playersInGame.length; i++) {
+            const currPlayer = gameData.playersInGame[i];
+            const playerCard = gameData.currentRoundPlayerCards[currPlayer._id];
+            if (playerCard && playerCard.point > max) {
+                max = gameData.currentRoundPlayerCards[currPlayer._id].point;
+                player = currPlayer;
             }
         }
-        return playerId;
-    }
-
-    static getCurrentPlayer(gameData) {
-        return _.find(gameData.playersInGame, { _id: this.getPlayerWhoPutMaxCard(gameData.currentRoundPlayerCards) })
+        return player;
     }
 
     static removeDonePlayers(gameData, $setObj) {
         const donePlayers = _.filter(gameData.playersInGame, o => $setObj.playersCards[o._id].length == 0);
         donePlayers.map(o => {
             delete $setObj.playersCards[o._id];
-            delete gameData.currentRoundPlayerCards[o._id];
             _.remove(gameData.playersInGame, { _id: o._id });
         });
         if (donePlayers.length) {

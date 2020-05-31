@@ -33,6 +33,7 @@ class AssController {
                 playersCards,
                 rounds: [],
                 startedBy: player,
+                players: playersInGame,
                 playersInGame,
                 escapedPlayers: [],
                 currentPlayer,
@@ -62,13 +63,14 @@ class AssController {
             const isLastCard = currentRoundCards.length == gameData.playersInGame.length - 1;
             $setObj.playersCards[player._id].splice(cardIndex, 1);
             if (currentRoundCards.length == 0 || (isSameType && !isLastCard)) {
-                $setObj.currentRoundPlayerCards[player._id] = chosenCard;
+                gameData.currentRoundPlayerCards[player._id] = chosenCard;
+                $setObj.currentRoundPlayerCards = gameData.currentRoundPlayerCards;
                 $setObj.currentPlayer = GameUtil.getNextPlayer(gameData.playersInGame, player);
             } else if (isSameType && isLastCard) {
-                $setObj.currentRoundPlayerCards[player._id] = chosenCard;
+                gameData.currentRoundPlayerCards[player._id] = chosenCard;
                 $pushObj.rounds = {
                     type: 'ALL_SUBMITTED',
-                    playersCards: $setObj.currentRoundPlayerCards,
+                    playersCards: gameData.currentRoundPlayerCards,
                     donePlayers: AssUtil.removeDonePlayers(gameData, $setObj),
                 };
                 $setObj.currentRoundPlayerCards = {};
@@ -103,8 +105,8 @@ class AssController {
                 updateObj.$push = $pushObj;
             }
             const updatedGameData = await mongodb.updateById(GAME_NAME, req.roomObjectId, updateObj);
-            _.assign($setObj, _.pick(gameData, ['playersInGame', 'players']));
-            const respObj = GameUtil.pickGamePublicFields(GAME_NAME, $setObj, player);
+            let respObj = _.assign({}, $setObj, _.pick(gameData, ['playersInGame', 'players', 'currentRoundPlayerCards',]));
+            respObj = _.assign(GameUtil.pickGamePublicFields(GAME_NAME, respObj, player), { currentRoundPlayerCards: $setObj.currentRoundPlayerCards });
             const emitObj = _.omit(respObj, ['myCards', 'lastRound']);
             if (!_.isEmpty($pushObj)) {
                 respObj.lastRound = $pushObj.rounds;

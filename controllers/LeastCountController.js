@@ -6,7 +6,7 @@ const GameUtil = require('../utils/GameUtil');
 const LeastCountUtil = require('../utils/LeastCountUtil');
 
 const GAME_NAME = 'leastcount';
-const cards = GameUtil.getStandardDeck(LeastCountUtil.pointMapper, 2);
+const cards = GameUtil.getStandardDeck(LeastCountUtil.pointMapper);
 
 class LeastCountController {
 

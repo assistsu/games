@@ -44,7 +44,7 @@ describe('Least count apis tests', function () {
                 .expect(200)
                 .then(() => {
                     const { $set } = updateByIdStub.args[0][2];
-                    const cards = GameUtil.getStandardDeck(LeastCountUtil.pointMapper, 2);
+                    const cards = GameUtil.getStandardDeck(LeastCountUtil.pointMapper);
                     expect($set.status).equal('STARTED');
                     expect($set.playersCards['123'].length).equal(7);
                     expect($set.playersCards['abc'].length).equal(7);
