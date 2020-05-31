@@ -94,11 +94,6 @@ class AssController {
             }
             if (gameData.playersInGame.length <= 1) {
                 $setObj.status = 'ENDED';
-                if (gameData.assPlayers[gameData.playersInGame[0]] == null) {
-                    gameData.assPlayers[gameData.playersInGame[0]] = 0;
-                }
-                gameData.assPlayers[gameData.playersInGame[0]]++;
-                $setObj.assPlayers = gameData.assPlayers;
             }
             let updateObj = { $set: $setObj };
             if (!_.isEmpty($pushObj)) {
