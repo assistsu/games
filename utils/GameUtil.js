@@ -58,6 +58,9 @@ class GameUtil {
     static pickGamePublicFields(gameName, gameData, player) {
         const fields = _.pick(gameData, this.gameFields[gameName]);
         switch (gameName) {
+            case 'uno':
+                this.setMyCards(gameData, player, fields);
+                break;
             case 'leastcount':
                 this.setMyCards(gameData, player, fields);
                 this.setMyPoints(gameData, player, fields);
