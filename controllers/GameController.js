@@ -106,7 +106,7 @@ class GameController {
     static async restart(req, res) {
         try {
             let { gameData, player } = req;
-            const $setObj = _.assign({ status: 'CREATED', playersInGame: gameData.players }, GameController.getUpdatedFields());
+            const $setObj = _.assign({ status: 'CREATED', playersInGame: gameData.players }, GameController.getUpdatedFields(player));
             const updatedGameData = await mongodb.updateById(req.gameName, req.roomObjectId, { $set: $setObj });
             GameController.storeEndedGameData(req.gameName, _.assign(gameData, _.pick($setObj, ['updatedAt', 'updatedBy'])));
             res.json($setObj);
