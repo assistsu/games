@@ -23,7 +23,7 @@ class UnoMiddleware extends GameMiddleware {
         if (!UnoUtil.isActionValid(req.gameData.lastCard, chosenCard)) {
             return res.status(400).json(responses.CHOSEN_CARD_NOT_MATCHED);
         }
-        res.cardIndex = cardIndex;
+        req.cardIndex = cardIndex;
         next();
     }
 }
