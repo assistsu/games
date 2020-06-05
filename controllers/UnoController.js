@@ -34,6 +34,7 @@ class UnoController {
                 }
             }
             const $setObj = {
+                players: playersInGame,
                 playersInGame, status: 'STARTED', lastCard, playersCards, deck,
                 startedBy: player, startedAt: new Date(),
                 currentPlayer: playersInGame[0], inc: 1,

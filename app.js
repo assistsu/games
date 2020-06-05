@@ -26,6 +26,7 @@ app.use('/logs', express.static('./logs'));
 
 app.get([
     '/',
+    '/profile',
     '/game/*',
 ], function (req, res) {
     res.sendFile(__dirname + '/games/index.html');
