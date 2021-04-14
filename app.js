@@ -1,7 +1,13 @@
 const express = require('express');
+const cors = require('cors')
 const app = express();
 const http = require('http').createServer(app);
 io = require('socket.io')(http);
+
+app.use(cors({
+    origin: 'https://assistsu-games.herokuapp.com',
+    optionsSuccessStatus: 200
+}));
 
 const bodyParser = require('body-parser');
 
@@ -12,25 +18,6 @@ app.use(bodyParser.json());
 const routes = require('./routes');
 
 app.use('/api/v1', routes);
-
-// if (process.env.NODE_ENV == 'prod') {
-//     app.get('/assets/js/bundle/*.js', function (req, res, next) {
-//         req.url += '.gz';
-//         res.set('Content-Encoding', 'gzip');
-//         next();
-//     });
-// }
-app.use('/assets', express.static('./games/assets'));
-
-app.use('/logs', express.static('./logs'));
-
-app.get([
-    '/',
-    '/profile',
-    '/game/*',
-], function (req, res) {
-    res.sendFile(__dirname + '/games/index.html');
-});
 
 app.all('*', (req, res) => { res.sendStatus(404) });
 
