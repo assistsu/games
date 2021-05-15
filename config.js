@@ -1,6 +1,7 @@
 function getStageConfigs() {
+    console.log("NODE_ENV::",process.env.NODE_ENV);
     switch (process.env.NODE_ENV) {
-        case "PROD":
+        case "production":
             return {
                 MONGO_DB_URL: "mongodb+srv://prod-king:itsprodking@cluster0.gaeyh.mongodb.net",
                 UI_ALLOW_ORIGIN: "https://assistsu-games.herokuapp.com",
