@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const mongodb = require('../model/mongodb');
+const io = require('../model/socket');
 const { serverError } = require('../utils/ResponseUtil');
 const GameUtil = require('../utils/GameUtil');
 const LeastCountUtil = require('../utils/LeastCountUtil');

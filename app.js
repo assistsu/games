@@ -2,18 +2,15 @@ const express = require('express');
 const cors = require('cors')
 const app = express();
 const http = require('http').createServer(app);
-io = require('socket.io')(http);
+require('./model/socket').init(http);
+const { UI_ALLOW_ORIGIN } = require('./config');
 
 app.use(cors({
-    origin: 'https://assistsu-games.herokuapp.com',
+    origin: UI_ALLOW_ORIGIN,
     optionsSuccessStatus: 200
 }));
 
-const bodyParser = require('body-parser');
-
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(bodyParser.json());
+app.use(express.json());
 
 const routes = require('./routes');
 
