@@ -1,5 +1,5 @@
 const socket = require('socket.io');
-const { UI_ALLOW_ORIGIN } = require('./config');
+const { UI_ALLOW_ORIGIN } = require('../config');
 
 let io;
 
