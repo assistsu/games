@@ -1,0 +1,158 @@
+html,
+body {
+    margin: 0;
+}
+
+#container {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+
+    * {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+}
+
+@import "styles/constants/colors";
+@import "styles/Common/display";
+@import "styles/Common/margin";
+@import "styles/Common/background";
+@import "styles/Common/button";
+@import "styles/Common/alert";
+@import "styles/Common/animations";
+
+.app-body {
+    height: 100%;
+    width: 100%;
+    background: $layout-bg;
+    overflow: auto;
+}
+
+a {
+    text-decoration: none;
+}
+
+.opacity-0 {
+    opacity: 0;
+}
+
+.opacity-1 {
+    opacity: 1;
+}
+
+.text-white {
+    color: white;
+}
+
+.z-index-1 {
+    z-index: 1;
+}
+
+.rounded-bottom-0 {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.text-underline {
+    text-decoration: underline;
+}
+
+.zoom-animi {
+    animation: zoom-in-out 2s infinite;
+}
+
+@keyframes zoom-in-out {
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.my-cards {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 0 10px;
+}
+
+.btn-shadow {
+    box-shadow: 5px 5px 10px black;
+}
+
+.sg-b-shadow {
+    box-shadow: 0 0 3px white;
+}
+
+.sg-border{
+    border: 2px solid white;
+}
+
+.sg-border-primary {
+    @extend .sg-border;
+    border-color: $primary;
+}
+
+.sg-border-danger {
+    @extend .sg-border;
+    border-color: $danger;
+}
+
+.sg-border-warning {
+    @extend .sg-border;
+    border-color: $warning;
+}
+
+.sg-form {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+
+    >* {
+        margin: 5px;
+    }
+
+    label {
+        margin: auto;
+        color: white;
+    }
+
+    input {
+        border-radius: 5px;
+        border: none;
+        padding: 5px;
+        text-align: center;
+    }
+
+    button {
+        margin: 10px auto;
+        color: white;
+        background: transparent;
+        border-radius: 10px;
+        box-shadow: 0 0 3px white;
+        padding: 5px 10px;
+    }
+}
+
+.sg-card {
+    display: inline-block;
+    padding: 10px;
+    border-radius: 5px;
+    @extend .sg-b-shadow;
+}
+
+.sg-loader {
+
+    .sg-loader-icon {
+        height: 30px;
+        width: 30px;
+        border: 5px dotted white;
+        border-left-color: transparent;
+        border-radius: 100%;
+        margin: 10px auto;
+        animation: spin 1.5s linear infinite;
+    }
+
+    .sg-loader-text{
+        color: white;
+        text-align: center;
+    }
+}

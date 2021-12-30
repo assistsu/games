@@ -1,0 +1,11 @@
+@keyframes zoom-out {
+    50% {
+        transform: scale(0.8);
+    }
+}
+
+@keyframes spin {
+    100%{
+        transform: rotate(360deg);
+    }
+}

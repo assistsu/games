@@ -1,0 +1,19 @@
+.d-flex {
+    display: flex;
+}
+
+.flex-column {
+    @extend .d-flex;
+    flex-direction: column;
+}
+
+.flex-wrap {
+    @extend .d-flex;
+    flex-wrap: wrap;
+}
+
+
+.flex-rcolumn {
+    @extend .d-flex;
+    flex-direction: column-reverse;
+}

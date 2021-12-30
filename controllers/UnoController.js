@@ -80,7 +80,7 @@ class UnoController {
                     $setObj.status = 'ENDED';
                     break;
                 case 1:
-                    if (req.body.isUnoClicked != 'true') {
+                    if (req.body.isUnoClicked != true) {
                         $setObj.playersCards[player._id] = $setObj.playersCards[player._id].concat($setObj.deck.splice(0, 2));
                     }
                     break;

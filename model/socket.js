@@ -1,16 +1,10 @@
 const socket = require('socket.io');
-const { UI_ALLOW_ORIGIN } = require('../config');
 
 let io;
 
 module.exports = {
     init: function (server) {
-        io = socket(server, {
-            cors: {
-                origin: UI_ALLOW_ORIGIN,
-                methods: ["GET", "POST"],
-            }
-        });
+        io = socket(server);
     },
     emit: function (id, data) {
         try {

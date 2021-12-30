@@ -1,0 +1,14 @@
+{
+    "name": "AssistsU Games",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "description": "Games app.",
+    "icons": [
+        {
+            "src": "/assets/images/favicon.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        }
+    ]
+}

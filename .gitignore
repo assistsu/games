@@ -1,5 +1,4 @@
-package-lock.json
 node_modules/
-games
 .nyc_output/
 logs/
+ui/assets/js/bundle/

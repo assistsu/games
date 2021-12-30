@@ -1,0 +1,113 @@
+@import 'styles/constants/colors.scss';
+
+.chatbox {
+
+    $chat-box-radius:10px;
+
+    height: 100%;
+    background: white;
+    z-index: 1;
+    padding: 0;
+    transition: all .5s;
+    display: flex;
+    flex-direction: column;
+    border-radius: $chat-box-radius;
+    border: 2px solid $primary;
+    overflow: hidden;
+
+    .chatbox-header {
+        display: flex;
+        padding: 5px 0;
+        position: relative;
+
+        .chatbox-title {
+            font-weight: bold;
+            margin: auto;
+            color: white;
+        }
+    }
+
+    .chatbox-body {
+        overflow-y: auto;
+        height: 100%;
+    }
+
+    .chatbox-message-box-outer {
+        display: flex;
+    }
+
+    .chatbox-message-box {
+        background: #c7dbef;
+        margin: 5px 10px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        display: inline-block;
+        max-width: 80%;
+
+        .chatbox-message-from {
+            display: flex;
+
+            b {
+                font-size: 13px;
+                text-decoration: underline;
+            }
+
+            .chatbox-message-time {
+                margin-left: auto;
+                margin-top: auto;
+                font-size: 10px;
+                padding-left: 10px;
+            }
+        }
+
+        .chatbox-message-text {
+            word-wrap: break-word;
+        }
+    }
+
+    .chatbox-message-align-right {
+        margin-left: auto;
+    }
+
+    .chatbox-footer {
+        width: 100%;
+
+        $input-box-height: 35px;
+        $emoji-mart-scroll-height: 165px;
+
+        input{
+            width: 100%;
+            border: none;
+            border-top: 1px solid $primary;
+            padding: 5px;
+        }
+        
+        button{
+            border-radius: 0;
+        }
+
+        .emojis {
+            height: 0;
+            transform: scale(0);
+            transition: 0.2s !important;
+
+            .emoji-mart {
+                width: 100% !important;
+
+                .emoji-mart-scroll {
+                    height: $emoji-mart-scroll-height !important;
+                }
+
+                .emoji-mart-bar:last-child,
+                .emoji-mart-search-icon {
+                    display: none !important;
+                }
+            }
+        }
+
+        .emojis-true {
+            height: $input-box-height + $emoji-mart-scroll-height;
+            transform: scale(1);
+        }
+    }
+}

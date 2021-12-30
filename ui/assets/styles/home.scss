@@ -1,0 +1,33 @@
+@import "styles/constants/colors.scss";
+
+.home-view {
+    padding: 20px;
+}
+
+.profile-btn {
+    border-radius: 100%;
+    height: 35px;
+    width: 35px;
+    background: $layout-bg;
+    box-shadow: 0 0 5px white;
+    color: white;
+}
+
+.games-body {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 10px 0;
+
+    .sg-game-card {
+        margin: 10px;
+        padding: 5px;
+        border-radius: 10px;
+        background: $layout-bg;
+        box-shadow: 0 0 5px white;
+        color: white;
+
+        .sg-game-card-footer {
+            margin: 5px 0;
+        }
+    }
+}

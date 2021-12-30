@@ -3,12 +3,10 @@ function getStageConfigs() {
         case "production":
             return {
                 MONGO_DB_URL: "mongodb+srv://prod-king:itsprodking@cluster0.gaeyh.mongodb.net",
-                UI_ALLOW_ORIGIN: "https://assistsu-games.herokuapp.com",
             };
         default:
             return {
-                MONGO_DB_URL: "mongodb://localhost:27017",
-                UI_ALLOW_ORIGIN: "http://localhost:8000"
+                MONGO_DB_URL: "mongodb+srv://stage-king:itsstageking@cluster0.vf4hl.mongodb.net",
             }
     }
 }

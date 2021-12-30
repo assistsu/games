@@ -1,0 +1,58 @@
+@import "styles/constants/colors.scss";
+
+.sg-modal {
+    position: fixed;
+    z-index: -1;
+    opacity: 0;
+    transition: z-index 0.5s, opacity 0.6s;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(black, 0.5);
+
+    .sg-modal-content-outer {
+        height: 100%;
+        width: 100%;
+        overflow: auto;
+        display: flex;
+        padding: 5px;
+    }
+
+    .sg-modal-content {
+        margin: auto;
+        background: $layout-bg;
+        border-radius: 10px;
+        box-shadow: 0 0 5px white;
+
+        .sg-modal-header {
+            position: relative;
+            padding: 5px;
+            border-bottom: 1px solid white;
+            color: white;
+            text-align: center;
+            display: flex;
+
+            .sg-modal-close-btn {
+                padding: 0;
+                height: 20px;
+                width: 20px;
+                background: $danger;
+                font-size: 12px;
+                border-radius: 100%;
+                color: white;
+                text-align: center;
+                margin: auto;
+            }
+        }
+
+        .sg-modal-body {
+            padding: 10px;
+        }
+    }
+}
+
+.sg-modal[data-show='true'] {
+    z-index: 100;
+    opacity: 1;
+}

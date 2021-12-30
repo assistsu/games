@@ -1,0 +1,21 @@
+@import "styles/constants/colors.scss";
+
+.sg-confirm-modal-body {
+    display: flex;
+    padding: 5px 0;
+
+    button {
+        width: 50px;
+        color: white;
+        border-radius: 5px;
+        margin: auto;
+    }
+
+    .yes-btn {
+        background: $danger;
+    }
+
+    .no-btn {
+        background: $primary;
+    }
+}

@@ -1,1 +1,1 @@
-# games-service
+# Games

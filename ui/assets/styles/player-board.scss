@@ -1,0 +1,99 @@
+.player-board {
+
+    $player1color: red;
+    $player2color: yellow;
+    $player3color: green;
+    $player4color: blue;
+    $player5color: orange;
+    @import './ludo-constants.scss';
+
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: $playerboardwidth;
+
+    .player-board-container {
+        display: flex;
+        flex-direction: column;
+
+        .player-board-header {
+            border-left: $squarewonwidth solid transparent;
+            border-right: $squarewonwidth solid transparent;
+            border-bottom: $squarewonheight solid;
+        }
+
+        .border-player-1 {
+            border-bottom-color: $player1color;
+        }
+
+        .border-player-2 {
+            border-bottom-color: $player2color;
+        }
+
+        .border-player-3 {
+            border-bottom-color: $player3color;
+        }
+
+        .border-player-4 {
+            border-bottom-color: $player4color;
+        }
+
+        .border-player-5 {
+            border-bottom-color: $player5color;
+        }
+
+
+        .player-board-body {
+            display: flex;
+
+            .squares {
+                display: flex;
+                flex-direction: column;
+
+                >* {
+                    height: $squaresize;
+                    width: $squaresize;
+                    border: 1px solid grey;
+                    background: white;
+                }
+
+                .bg-player-1 {
+                    background: $player1color;
+                }
+
+                .bg-player-2 {
+                    background: $player2color;
+                }
+
+                .bg-player-3 {
+                    background: $player3color;
+                }
+
+                .bg-player-4 {
+                    background: $player4color;
+                }
+
+                .bg-player-5 {
+                    background: $player5color;
+                }
+
+                .square-star {
+                    position: relative;
+                    display: flex;
+
+                    >* {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        margin: auto;
+                        color: grey;
+                    }
+                }
+            }
+        }
+    }
+}

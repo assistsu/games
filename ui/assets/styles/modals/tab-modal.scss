@@ -1,0 +1,27 @@
+.tab-modal-header {
+    flex-shrink: 0;
+    display: flex;
+    width: 200px;
+    margin: 0 30px;
+
+    button {
+        width: 50%;
+        color: white;
+        background: transparent;
+        box-shadow: 0 0 3px white;
+    }
+
+    button:disabled{
+        opacity: 0.5;
+    }
+
+    button:first-child {
+        border-top-left-radius: 5px;
+        border-bottom-left-radius: 5px;
+    }
+
+    button:last-child {
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }
+}

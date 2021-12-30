@@ -1,0 +1,44 @@
+button {
+    border: none;
+    background: transparent;
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+}
+
+button:focus,
+input:focus {
+    outline: none !important;
+}
+
+button:active {
+    animation: zoom-out 0.5s;
+}
+
+.sg-btn,
+.sg-btn-trans {
+    box-shadow: 0 0 5px white;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 15px;
+    color: white;
+}
+
+.sg-btn-primary {
+    @extend .sg-btn;
+    @extend .sg-bg-primary;
+    box-shadow: none;
+}
+
+.sg-btn-danger {
+    @extend .sg-btn;
+    @extend .sg-bg-danger;
+    box-shadow: none;
+}
+
+.sg-btn-light {
+    @extend .sg-btn;
+    @extend .sg-bg-light;
+    color: black;
+}

@@ -1,0 +1,10 @@
+.sg-alert {
+    text-align: center;
+    padding: 10px;
+}
+
+.sg-alert-danger {
+    @extend .sg-alert;
+    background: $danger;
+    color: white;
+}
